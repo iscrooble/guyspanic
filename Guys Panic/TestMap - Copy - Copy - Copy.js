@@ -7977,7 +7977,7 @@ class CharSelect extends Phaser.Scene{
         this.load.image('charSelect','assets/image/portraits/charSelect.png');
 
 
-        this.load.bitmapFont('score', 'assets/fonts/HardPixel_0.png', 'assets/fonts/HardPixel.fnt');
+        this.load.bitmapFont('score', 'assets/fonts/Hardpixel_0.png', 'assets/fonts/Hardpixel.fnt');
         this.load.bitmapFont('description', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
 
 
