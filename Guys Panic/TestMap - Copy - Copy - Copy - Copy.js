@@ -1923,7 +1923,7 @@ this.time.addEvent({
 })
 
 
-/*this.time.addEvent({
+this.time.addEvent({
     delay: 500,
     callback: () => {
         this.sfxMusic = this.sound.add('musicRound');
@@ -1933,7 +1933,7 @@ this.time.addEvent({
         this.sfxMusicIntro.on('complete',() => this.sfxMusic.play());
 
     }
-})*/ //kill the music for now
+}) //kill the music for now
 
 
 }
@@ -3099,7 +3099,7 @@ updateTimer(){
 
         //code here for muting music, then speeding it up
         //this.sfxMusic.pause();
-        //this.sfxMusic.setRate(2);
+        //this.sfxMusic.setRate(1.5);
         //this.hurryUp.on('complete',() => this.sfxMusic.resume());
 
         //code here for popup
@@ -5919,6 +5919,7 @@ updateEnemy(){
                 }
 
                 //debug thunderclouds
+                /*
                 keyD.on('up', () => { 
                     flipFlop = false;
                  });
@@ -5932,7 +5933,7 @@ updateEnemy(){
                         flipFlop = true
                     }
                  });
-                 
+                 */
                 
                 
                 //swing left
@@ -10241,7 +10242,7 @@ var config = {
         antialiasGL: true,
     },//ORDER MATTERS HERE, FIRST SCENE IS WHAT GETS PLAYED FIRST NO MATTER WHAT
 //    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
-    scene: [MainRound, TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
+    scene: [TitleScreen,MainRound,CharSelect,GameOver,Transition,Loading,WinTest]
 };
 
 
