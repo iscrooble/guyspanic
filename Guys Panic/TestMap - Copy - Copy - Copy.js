@@ -4370,9 +4370,6 @@ increaseHealth(num = 1){
             isMoving = true;
             spawnItemRNG *= 0.5;
 
-            currentScene.time.addEvent({
-                delay: 500,
-                callbacK: () => {
 
                     currentScene.time.addEvent({
                         delay: 1700,
@@ -4429,7 +4426,6 @@ increaseHealth(num = 1){
                     })
         
                 }
-            })
 
 
 
@@ -7394,8 +7390,10 @@ this.checkAdjacentTrans();
                                 }else if(!enemy._noDie){
                                     enemy._spriteOverlay = currentScene.add.sprite(enemy.x,enemy.y,'iceSmall').play('iceSmallAnim');
                                 }
-                                enemy._spriteOverlay.scale = enemy.scale;
-                                UICam.ignore([enemy._spriteOverlay])
+                                if(enemy._spriteOverlay != undefined){
+                                    enemy._spriteOverlay.scale = enemy.scale;
+                                    UICam.ignore([enemy._spriteOverlay])    
+                                }
                         }
                         });
                     //animation that shows enemy frozen? like ice crystal?
