@@ -504,6 +504,8 @@ class MainRound extends Phaser.Scene{
 
 init(){
 
+    
+
     this.buttonPressingSprite;
     this.startBlack;
 
@@ -572,7 +574,7 @@ this.startSing = false;
 preload ()
 {
 
-
+    this.sound.setVolume(0.5)
     currentScene = this;
 
     //plugins
@@ -8402,6 +8404,8 @@ class GameOver extends Phaser.Scene{
 
     preload ()
     {
+
+        this.sound.setVolume(0.5)
         //plugins
         this.load.plugin('rexgridcutimageplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexgridcutimageplugin.min.js', true);
 
@@ -8537,6 +8541,8 @@ class Transition extends Phaser.Scene{
 
     create (){
         
+        this.sound.setVolume(0.5)
+
         var rect = this.add.rectangle(0, 0, screenW, screenH, 0x000000).setAlpha(0).setOrigin(0,0);
         this.add.tween({
             targets: rect,
@@ -8570,6 +8576,9 @@ class CharSelect extends Phaser.Scene{
     }
 
     preload(){
+
+        this.sound.setVolume(0.5)
+
         this.load.image('tigerTile','assets/image/tilebackground/tigerTile.png');
         this.load.image('unknownTile','assets/image/tilebackground/unknownTile.png');
         this.load.image('blankStar','assets/image/portraits/blankStar.png');
@@ -9358,6 +9367,8 @@ class Loading extends Phaser.Scene{
 
     create (){
 
+        this.sound.setVolume(0.5)
+
 console.log("LOADING SCREEN STARTED")
         this.anims.create({
             key: 'loadingAnim',
@@ -9383,6 +9394,9 @@ class WinTest extends Phaser.Scene{
     }
 
     preload () {
+
+        this.sound.setVolume(0.5)
+
         this.load.image('bgTile','assets/image/bgTile2.png');
         this.load.bitmapFont('description', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
         if(totalScore/2 == 100){
@@ -9477,6 +9491,7 @@ class TitleScreen extends Phaser.Scene{
 
     create (){
 
+        this.sound.setVolume(0.5)
 
         this.sfxSelect = this.sound.add('charSelect')
 
