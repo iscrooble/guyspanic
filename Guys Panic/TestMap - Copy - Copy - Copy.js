@@ -1,4 +1,8 @@
 
+//if you see this and you dont know me, add me on Discord (david4816)
+
+
+
 var currentScene;
 
 
@@ -23,13 +27,13 @@ const checkColor = 5;
 
 var speed = 2;
 
-let aPress;
-let bPress;
-let cPress;
-let dPress;
-let qPress;
-let wPress;
-let spacePress;
+var aPress = false;
+var bPress = false;
+var cPress = false;
+var dPress = false;
+var qPress = false;
+var wPress = false;
+var spacePress = false;
 
 var map;
 let mapMask;
@@ -85,7 +89,7 @@ var gagSilhouetteHueValue;
 
 var enemyArray = [];
 var totalBlobs=0;
-var totalBlobsMax = 6;
+var totalBlobsMax = 8;
 
 var cam;
 var UICam;
@@ -122,7 +126,7 @@ var origLayer;
 var mapBlitter;
 
 var roundTimer;
-var roundTimerMax = 160;
+var roundTimerMax = 160; //THIS IS NOT THE ACTUAL INIT, CHECK BELOW W/ SAME NAME
 var timerBar;
 
 const COLOR_MAIN = 0x4e342e;
@@ -297,9 +301,9 @@ const { GetRandom } = Phaser.Utils.Array;
 
 const itemTypes = ["speed","zap","slow","stop","shrink"];
 
-var spawnItemRNG = 50;
+var spawnItemRNG = 500;
 var foodRNG = 50; // (1/foodRNG) of occurring
-var favFoodRNG = 99; //1/10th out of all the food rngs, can be varied as player dies more?
+var favFoodRNG = 10; //1/10th out of all the food rngs, can be varied as player dies more?
 var powerRNG = 50;
 var itemArray = []
 var itemSelection = [];
@@ -476,6 +480,14 @@ var currentChar = "tiger";
 var currentRound = 1;
 
 
+var isFinishedLoading = false;
+
+var totalScore = 0;
+var timeElapsed = 0;
+var totalDeaths = 0;
+
+var bIsPressed = false;
+
 
 
 
@@ -505,11 +517,11 @@ silhouetteMatrix = []
 gagSilhouetteMatrix = []
 enemyArray = [];
 totalBlobs=0;
-totalBlobsMax = 6;
+totalBlobsMax = 8;
 boxRoulette = true;
 startingRound = true;
 boxTimer = 0;
-roundTimerMax = 160;
+roundTimerMax = 160; //ITS THIS ONE
 startBaseColor = [];
 gagMode = false;
 currentHealth = totalHealth;
@@ -551,8 +563,8 @@ explosionArray = [];
 actualFillCounter = 0;
 bossKill = false;
 bossKillStarted = false;
-spawnItemRNG = 50;
-
+spawnItemRNG = 100;
+this.startSing = false;
 
 
 }
@@ -584,6 +596,8 @@ preload ()
     //enemies
     this.load.spritesheet('testEnemy','assets/image/enemies/testEnemy.png',{frameWidth:24,frameHeight:24});
     this.load.spritesheet('bullEnemy','assets/image/enemies/bull.png',{frameWidth: 150, frameHeight: 180});
+    this.load.spritesheet('cloudFront','assets/image/enemies/cloudFront.png',{frameWidth: 150, frameHeight: 180});
+    this.load.spritesheet('cloudBack','assets/image/enemies/cloudBack.png',{frameWidth: 150, frameHeight: 180});
     this.load.spritesheet('bullBlob','assets/image/enemies/blobbert.png',{frameWidth: 60, frameHeight: 60});
     this.load.image('bullComb','assets/image/enemies/bullComb.png');
     this.load.spritesheet('thundercloud','assets/image/enemies/thundercloud.png',{frameWidth: 56, frameHeight: 40});
@@ -612,13 +626,15 @@ preload ()
     if(currentChar == "tiger"){
         tints = [red, orange, yellow, aqua]
         if(currentRound == 1){
-            this.load.image('backgroundImageBackground','assets/image/tilebackground/tigerTile.png');
+//            this.load.image('backgroundImageBackground','assets/image/imageReveal/Tiger/Tiger1Background.png')
+            this.load.image('backgroundImageBackground','assets/image/tilebackground/tigerTile2.png');
             this.load.image('backgroundSilhouette','assets/image/imageReveal/Tiger/Tiger1Mask.png');
             this.load.image('backgroundImage','assets/image/imageReveal/Tiger/Tiger1.png');
 
             this.load.image('cgSprite','assets/image/cgsprite/TigerCG1.png');
         }else if(currentRound == 2){
-            this.load.image('backgroundImageBackground','assets/image/tilebackground/tigerTile.png');
+//            this.load.image('backgroundImageBackground','assets/image/imageReveal/Tiger/Tiger2Background.png')
+            this.load.image('backgroundImageBackground','assets/image/tilebackground/tigerTile3.png');
             this.load.image('backgroundSilhouette','assets/image/imageReveal/Tiger/Tiger2Mask.png');
             this.load.image('backgroundImage','assets/image/imageReveal/Tiger/Tiger2.png');        
 
@@ -627,7 +643,7 @@ preload ()
             console.log("ERROR: currentRound outside scope")
         }
     }
-    this.load.image('cgSpeechBubble','assets/image/cgsprite/speechBubble.png');
+    this.load.image('cgSpeechBubble','assets/image/cgsprite/SpeechBubble.png');
 
     //gag
 //    this.load.image('gagImage','assets/image/imageReveal/testHorizontalGag.png');
@@ -635,7 +651,8 @@ preload ()
 //    this.load.image('gagImageBackground','assets/image/imageReveal/testHorizontalBackgroundGag.png');
     this.load.image('gagImage','assets/image/imageReveal/Tiger/Tiger1Gag.png');
     this.load.image('gagImageSilhouette','assets/image/imageReveal/Tiger/Tiger1GagMask.png');
-    this.load.image('gagImageBackground','assets/image/tilebackground/unknownTile.png');
+//    this.load.image('gagImageBackground','assets/image/tilebackground/unknownTile.png');
+    this.load.image('gagImageBackground','assets/image/imageReveal/Tiger/Tiger1GagBackground.png');
 
 
 //    borderImage.setScrollFactor(0,0);
@@ -672,26 +689,33 @@ preload ()
     this.load.audio('thunder','assets/audio/placeholder/thunder.ogg')
     this.load.audio('lightning','assets/audio/placeholder/lightning.ogg')
     this.load.audio('cloud','assets/audio/placeholder/cloud.ogg')
+    this.load.audio('lightningbolt1','assets/audio/placeholder/lightningbolt.ogg')
+    this.load.audio('lightningbolt2','assets/audio/placeholder/lightning2.ogg')
+    this.load.audio('soundwave1','assets/audio/placeholder/soundwave1.ogg')
+    this.load.audio('soundwave2','assets/audio/placeholder/soundwave2.ogg')
 
     this.load.audio('speedup','assets/audio/placeholder/speedup.ogg')
     this.load.audio('shrink','assets/audio/placeholder/shrink.ogg')
     this.load.audio('freeze','assets/audio/placeholder/freeze.ogg')
     this.load.audio('slow','assets/audio/placeholder/slow.ogg')
     this.load.audio('favFood','assets/audio/placeholder/favFood.ogg')
+    this.load.audio('heal','assets/audio/placeholder/heal.ogg')
 
     this.load.audio('fireworkSFX','assets/audio/placeholder/firework.ogg')
     this.load.audio('winTune','assets/audio/placeholder/win.ogg')
     this.load.audio('applause','assets/audio/placeholder/applause.ogg')
     this.load.audio('applauseLong','assets/audio/placeholder/applauseLong.ogg')
+    this.load.audio('cheer2','assets/audio/placeholder/cheer2.ogg')
 
     this.load.audio('bubble','assets/audio/placeholder/bubble.ogg')
     this.load.audio('start','assets/audio/placeholder/start.ogg')
 
-    
+    this.load.audio('warningSFX','assets/audio/placeholder/warning.ogg')
+
 
 
     //preloading fonts
-    this.load.bitmapFont('score', 'assets/fonts/BorderBasic_0.png', 'assets/fonts/BorderBasic.fnt');
+    this.load.bitmapFont('score', 'assets/fonts/Hardpixel_0.png', 'assets/fonts/Hardpixel.fnt');
     this.load.bitmapFont('speech', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
 
     //HUD
@@ -701,6 +725,9 @@ preload ()
     this.load.spritesheet('favBubble','assets/image/HUD/favBubble.png',{frameWidth:60,frameHeight:60});
     this.load.spritesheet('buttonPressing','assets/image/HUD/buttonPressing.png',{frameWidth:65,frameHeight:65});
     this.load.image('timerBorder','assets/image/HUD/timer.png');
+    this.load.image('timerClock','assets/image/HUD/clock.png');
+    this.load.image('scroll','assets/image/HUD/scroll.png');
+    this.load.image('warning','assets/image/HUD/warning.png');
     
 
 
@@ -725,6 +752,32 @@ preload ()
     this.load.spritesheet('webSmall','assets/image/particles/webSmall.png',{frameWidth:37,frameHeight:37});
     this.load.spritesheet('webBig','assets/image/particles/webBig.png',{frameWidth:111,frameHeight:111});
     this.load.spritesheet('heart','assets/image/particles/heart.png',{frameWidth:24,frameHeight:24});
+    this.load.image('health','assets/image/particles/health.png');
+
+
+    //music
+
+    this.cache.audio.remove('musicRound');
+    this.cache.audio.remove('musicRoundIntro');
+
+    if(bIsPressed){
+        this.load.audio('musicRound','assets/audio/placeholder/wipsong.ogg');
+        this.load.audio('musicRoundIntro','assets/audio/placeholder/wipsong.ogg');
+        console.log("secret song activated!")
+        console.log("its unfinished so theres no real loop or intro")
+    }else{
+        if(currentRound == 1){
+            this.load.audio('musicRound','assets/audio/placeholder/liarparadox.ogg');
+            this.load.audio('musicRoundIntro','assets/audio/placeholder/liarparadox_intro.ogg');        
+        }else if(currentRound == 2){
+            this.load.audio('musicRound','assets/audio/placeholder/dancer.ogg');
+            this.load.audio('musicRoundIntro','assets/audio/placeholder/dancer_intro.ogg');    
+        }
+    }
+
+
+    this.load.plugin('rexsoundfadeplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexsoundfadeplugin.min.js', true);
+
 
     
 }
@@ -735,6 +788,9 @@ create ()
 {
 
 
+    this.attackDelay = (210*3*2);
+    this.isScroll = false;
+    roundTimer = undefined;
     //generate pixel texture
     this.textures.generate('pixel', { data: ['2'], pixelWidth: 1 });
 
@@ -778,6 +834,13 @@ create ()
     this.sfxApplauseLong = this.sound.add('applauseLong');
     this.sfxBubble = this.sound.add('bubble')
     this.sfxStart = this.sound.add('start');
+    this.sfxCheer2 = this.sound.add('cheer2');
+    this.sfxWarning = this.sound.add('warningSFX');
+    this.sfxHeal = this.sound.add('heal');
+    this.sfxLightningbolt1 = this.sound.add('lightningbolt1');
+    this.sfxLightningbolt2 = this.sound.add('lightningbolt2');
+    this.sfxSoundwave1 = this.sound.add('soundwave1');
+    this.sfxSoundwave2 = this.sound.add('soundwave2');
 
     //plugin fx
     postFxPlugin = this.plugins.get('rexshockwavepipelineplugin');
@@ -831,10 +894,10 @@ create ()
     numRevealed = 0;
     //adding background image
 
-//    imageBackground = this.add.image(0,0,'backgroundImageBackground').setOrigin(0,0).setScrollFactor(0.5);
+//    imageBackground = this.add.image(0,0,'backgroundImageBackground').setOrigin(0,0)//.setScrollFactor(0.5);
     imageBackground = this.add.tileSprite(0, 0, imageWidth, imageHeight, 'backgroundImageBackground').setOrigin(0).setScrollFactor(0.3);
-//    silhImageBackground = this.add.image(0,0,'gagImageBackground').setOrigin(0,0).setVisible(false).setScrollFactor(0.5);
-    silhImageBackground = this.add.tileSprite(0, 0, imageWidth, imageHeight, 'gagImageBackground').setOrigin(0).setScrollFactor(0.3).setVisible(false);
+    silhImageBackground = this.add.image(0,0,'gagImageBackground').setOrigin(0,0).setVisible(false)//.setScrollFactor(0.5);
+//    silhImageBackground = this.add.tileSprite(0, 0, imageWidth, imageHeight, 'gagImageBackground').setOrigin(0).setScrollFactor(0.3).setVisible(false);
 
     imageBackground.depth = -1;
     silhImageBackground.depth = -1;
@@ -849,7 +912,9 @@ create ()
     gagTotalSilhouette = 0;
 
     console.log("Width: " + imageWidth);
-    console.log("Height: " + imageHeight)
+    console.log("Height: " + imageHeight);
+    console.log("ScreenW: " + screenW);
+    console.log("ScreenH: " + screenH);
 
 
     //manually make the data matrices for each image if performance becomes an issue
@@ -1311,6 +1376,8 @@ create ()
     keyC = this.input.keyboard.addKey(67);
     //D = 68
     keyD = this.input.keyboard.addKey(68);
+    //E = 69
+    this.keyE = this.input.keyboard.addKey(69);
     //Q = 81
     keyQ = this.input.keyboard.addKey(81);
     //W = 87
@@ -1420,7 +1487,7 @@ create ()
     this.anims.create({
         key: 'lightning2Anim',
         frames: this.anims.generateFrameNumbers('lightning2',{start:0,end:1}),
-        frameRate: 12,
+        frameRate: 6,
         repeat: -1,
     });
 
@@ -1445,6 +1512,27 @@ create ()
     glowSprite = this.add.sprite(0,0,'glow').setVisible(false);
     glowSprite.depth = 3;
     //emitters
+
+
+    this.healthEmitter = this.add.particles(0,0,'health',{
+        speedY: -10,
+        gravityY: -100,
+        frequency: 20,
+        x: {min: -5,max: 5},
+//        y: 20,
+        scale: {min: 0.2, max: 0.5},
+        blendMode: 'ADD',
+        speedX: {
+            onEmit: (p) => 3*p.x
+        },
+        stopAfter: 20,
+        lifespan: {min: 600, max: 1000},
+        alpha: {start: 1, end: 0},
+        emitting: false,
+    });
+
+    this.healthEmitter.depth = 3;
+
 
     sparkleEmitter = this.add.particles(0,0,'sparkle',{
         anim: ['sparkleShine','sparkleShine2'],
@@ -1724,6 +1812,12 @@ heartEmitter = this.add.particles(0,0,'heart',{
 //    speedY: {min: -300, max: 0},
     speed: 200,
 //    angle: {min: 0, max: 360},
+    scaleX: {
+        onUpdate: (particle,k,t) => {
+        // 4 cycles per lifespan
+        return Math.cos(TAU * 10 * ((CubicIn(1 - t)**3)) );
+        }
+    },
     gravityY: 400,
     lifespan: 4000,
     angle: {start: 0, end: 360, steps: 6},
@@ -1775,7 +1869,7 @@ healthImage = currentScene.add.image(0,0,'healthHUD').setFrame(0).setVisible(fal
 
 
 
-    cam.setBounds(0,0,imageWidth,imageHeight);
+    cam.setBounds(0,0,screenW,screenH);
 //    this.physics.world.setBounds(0,0,imageWidth,imageHeight);
     if(!boxRoulette){
         cam.startFollow(player,true,0.1,0.1);
@@ -1792,7 +1886,7 @@ healthImage = currentScene.add.image(0,0,'healthHUD').setFrame(0).setVisible(fal
 
     UICam.ignore([image, imageSilh, gagImageSilh,
         sparkleEmitter,sparkleEmitter2, rainbowStarEmitter, rainbowStarEmitter2, drawSparkles, itemSparkles, explosionEmitter1, 
-        explosionEmitter2,explosionEmitter3, explosionArray,
+        explosionEmitter2,explosionEmitter3, explosionArray, this.healthEmitter,
         glowSprite, enemyArray, imageBackground, silhImageBackground, rubbleEmitter, rainbowContainer, rainbowContainer2, heartEmitter]);
 
     if(showDebug){
@@ -1815,6 +1909,27 @@ healthImage = currentScene.add.image(0,0,'healthHUD').setFrame(0).setVisible(fal
 //cam.addToRenderList(imageSilh);
 
 //this.events.on('prerender', this.preRender, this);
+
+this.time.addEvent({
+    delay: 700,
+    callback: () => {
+        this.scene.stop('LoadingScene')
+    }
+})
+
+
+this.time.addEvent({
+    delay: 500,
+    callback: () => {
+        this.sfxMusic = this.sound.add('musicRound');
+        this.sfxMusic.setLoop(true);
+        this.sfxMusicIntro = this.sound.add('musicRoundIntro');
+        this.sfxMusicIntro.play();
+        this.sfxMusicIntro.on('complete',() => this.sfxMusic.play());
+
+    }
+})
+
 
 }
 
@@ -1967,7 +2082,7 @@ startCG(startRound = true){
 
     if(startRound){
         this.time.addEvent({
-            delay: 5000+800+300+1000+250,
+            delay: 5000+800+300+300+130+1500-800+70-300-300,
             callback: () => {
                 startingRound = false;
             }
@@ -2094,15 +2209,32 @@ startCG(startRound = true){
                 x: 110,
             },
             {
-                duration: 100,
+                duration: 130,
                 delay: 400,
+                ease: 'Circ.easeOut',
+                yoyo: true,
+//                repeat: 1,
+//                repeatDelay: 50,
+                y: '-=6',
+                onStart: () => {
+                    this.sfxBubble.play();
+                },
+                onComplete: () => {
+//                    if(!startRound){
+//                        chain2.pause();
+//                    }
+                }
+            },
+            {
+                duration: 80,
+//                delay: 400,
                 ease: 'Circ.easeOut',
                 yoyo: true,
 //                repeat: 1,
 //                repeatDelay: 50,
                 y: '-=3',
                 onStart: () => {
-                    this.sfxBubble.play();
+//                    this.sfxBubble.play();
                 },
                 onComplete: () => {
                     if(!startRound){
@@ -2126,8 +2258,8 @@ startCG(startRound = true){
     });
 
 
-    this.bitmapLabel = this.add.bitmapText(184, 65, 'speech', '')
-			.setMaxWidth(80)
+    this.bitmapLabel = this.add.bitmapText(186, 60, 'speech', '')
+			.setMaxWidth(85)
 
             this.bitmapLabel.depth = 6;
 
@@ -2141,9 +2273,9 @@ startCG(startRound = true){
                     if(startRound){
                         if(currentChar == "tiger"){
                             if(currentRound == 1){
-                                speechText = "    Let\'s get\n this fired up!";//the spaces are important
+                                speechText = "    Let\'s\n  get this\n fired up!";//the spaces are important
                             }else if(currentRound == 2){
-                                speechText = "The beach? Erm, if you insist..."
+                                speechText = "Volleyball? Erm, if you insist..."
                             }
                         }    
                     }else{
@@ -2154,10 +2286,10 @@ startCG(startRound = true){
                                 }else if(percentageRevealed >= 90){
                                     speechText = "This one\'s on the house!";
                                 }else{
-                                    speechText = "What? Can\'t appreciate good meat?"
+                                    speechText = "    What?\n    Can\'t\n appreciate\ngood meat?"
                                 }
                             }else if(currentRound == 2){
-                                speechText = "S-stop staring there!"
+                                speechText = "    S-stop\n    staring\n   there!"
                             }
                         }    
 
@@ -2247,8 +2379,10 @@ typewriteBitmapText(text)
 	let i = 0
 	this.time.addEvent({
 		callback: () => {
-			this.bitmapLabel.text += wrappedText[i]
-			++i
+            if(this.bitmapLabel != undefined && text != undefined && wrappedText != undefined && wrappedText[i] != undefined){
+                this.bitmapLabel.text += wrappedText[i]
+                ++i    
+            }
 		},
 		repeat: length - 1,
 		delay: 40
@@ -2329,12 +2463,17 @@ spawnBullBoss(){
     var bullSpawnX = bullInitPos[1];
     var bullSpawnY = bullInitPos[0];
 
-    bullEnemy = currentScene.add.sprite(bullSpawnX,bullSpawnY,'bullEnemy').play('bullEntrance1').setAlpha(0)
+    this.bullCloudBack = currentScene.add.sprite(bullSpawnX,bullSpawnY,'cloudBack').setAlpha(0);
+    bullEnemy = currentScene.add.sprite(bullSpawnX,bullSpawnY,'bullEnemy').play('bullEntrance1').setAlpha(0);
+    this.bullCloudFront = currentScene.add.sprite(bullSpawnX,bullSpawnY,'cloudFront').setAlpha(0);
+
+    var cloudBackTint = currentScene.add.sprite(bullSpawnX,bullSpawnY,'cloudBack').setAlpha(0);
     var bullEnemyTint = currentScene.add.sprite(bullSpawnX,bullSpawnY,'bullEnemy').play('bullEntrance1').setAlpha(0);
+    var cloudFrontTint = currentScene.add.sprite(bullSpawnX,bullSpawnY,'cloudFront').setAlpha(0);
 
 //    console.log("Bull position: (" + bullEnemy.x + "," + bullEnemy.y + ")")
 
-    UICam.ignore([bullEnemy,bullEnemyTint]);
+    UICam.ignore([bullEnemy,bullEnemyTint,this.bullCloudBack,this.bullCloudFront,cloudBackTint,cloudFrontTint]);
 
     bullIntroTimeline = currentScene.add.timeline([
         {
@@ -2351,27 +2490,37 @@ spawnBullBoss(){
                 bullEnemy._yVel = (Math.floor(Math.random())*2-1)/4;
                 bullEnemy._vel = 2;
                 bullEnemy._swingDir = -1;
-                bullEnemy._singTimer = 0;
+                this.singTimer = 0;
                 bullEnemy._blobSpawnTimer = 0;
                 bullEnemy._blobSpawnTimerMax = 500;
-                bullEnemy._singCooldown = 2000;
-                bullEnemy._singRNG = 200;
+                this._singCooldown = 200;
+                bullEnemy._singRNG = 10;
                 bullEnemy.depth = 1;
                 bullEnemy._size = 1; //shrink down to 1/4
                 bullEnemy._agoraCheck = 1;
 
-                bullEnemyTint.x = bullEnemy.x;
-                bullEnemyTint.y = bullEnemy.y;
-                bullEnemyTint.depth = 2;
+                bullEnemyTint.x = cloudBackTint.x = cloudFrontTint.x = bullEnemy.x;
+                bullEnemyTint.y = cloudBackTint.y = cloudFrontTint.y = bullEnemy.y;
+                bullEnemyTint.depth = cloudBackTint.depth = cloudFrontTint.depth = 2;
                 bullEnemyTint.setTintFill(0x000000);
+                cloudBackTint.setTintFill(0x000000);
+                cloudFrontTint.setTintFill(0x000000);
 //                bullEnemy.setAlpha(0);
 //                bullEnemyTint.setAlpha(0);
 
+                this.bullCM = bullEnemy.postFX.addColorMatrix();
+                this.cloudFCM = this.bullCloudFront.postFX.addColorMatrix();
+                this.cloudBCM = this.bullCloudBack.postFX.addColorMatrix();
+
             
                 enemyArray.push(bullEnemy);
+
+//                this.debugSingTimer = this.add.bitmapText(10,10,'speech','');
+
+
             },
             tween: {
-                targets: [bullEnemyTint],
+                targets: [bullEnemyTint,cloudBackTint,cloudFrontTint],
                 alpha: 1,
                 duration: 1300,
             }
@@ -2382,10 +2531,14 @@ spawnBullBoss(){
             from: 1500,
             run: () => {
                 bullEnemyTint.setTintFill(0xffffff)
+                cloudBackTint.setTintFill(0xffffff)
+                cloudFrontTint.setTintFill(0xffffff)
                 bullEnemy.setAlpha(1);
+                this.bullCloudBack.setAlpha(1);
+                this.bullCloudFront.setAlpha(1);
             },
             tween: {
-                targets: bullEnemyTint,
+                targets: [bullEnemyTint,cloudBackTint,cloudFrontTint],
                 alpha: 0,
                 duration: 200,
                 delay: 100,
@@ -2396,6 +2549,8 @@ spawnBullBoss(){
             from: 1500,
             run: () => {
                 bullEnemyTint.destroy();
+                cloudBackTint.destroy();
+                cloudFrontTint.destroy();
                 bullEnemy.anims.play('bullEntrance2')
                 this.spawnBullBlobs(3);
             }
@@ -2477,7 +2632,7 @@ spawnBullBoss(){
             run: () => {
                 isSinging = false;
                 bullEnemy._state = "move"
-                bullEnemy._singTimer = 0;
+                this.resetSing();
             }
         }
     ]);
@@ -2657,6 +2812,20 @@ spawnPlayer(){
     layerRT = currentScene.add.renderTexture(0,0,imageWidth,imageHeight).setOrigin(0,0);
     drawRT = currentScene.add.renderTexture(0,0,imageWidth,imageHeight).setOrigin(0,0);
 
+//    layerRT.postFX.addBloom(0xffffff,1,1,0.5,3,4)
+    this.layerRTFX = layerRT.postFX.addGlow(0xfff194,0.2,0.2,false,0.3,2)
+
+    currentScene.tweens.add({
+        targets: this.layerRTFX,
+        outerStrength: 1,
+        innerStrength: 1,
+        distance: 6,
+        ease: 'Sine.easeInOut',
+        duration: 1000,
+        loop: -1,
+        yoyo: true
+    })
+
     this.updateDrawTexture();
 
 //    layerRT.x = screenW/2
@@ -2674,9 +2843,12 @@ spawnPlayer(){
                 mapArray[i][j] = transColor;
                 layerRT.batchDrawFrame('baseTiles',transColor,i,j)
 //                layerRT.batchDrawFrame('pixel', undefined, i, j, 1, tileTint[transColor]);
-            }else if(i<borderWidth || j<borderWidth || i>imageWidth-borderWidth || j>imageHeight-borderWidth){
+            }else if(i<borderWidth || j<borderWidth || i>imageWidth-borderWidth || j>imageHeight-borderWidth
+                || i>screenW-borderWidth || j>screenH-borderWidth
+            ){
                 mapArray[i][j] = borderColor;
-                layerRT.batchDrawFrame('baseTiles',borderColor,i,j)
+//                layerRT.batchDrawFrame('baseTiles',borderColor,i,j)
+                layerRT.batchDrawFrame('baseTiles',baseColor,i,j)
 //                layerRT.batchDrawFrame('pixel', undefined, i, j, 1, tileTint[borderColor]);
             }else if(i >= initSquareX && i <= (initSquareW) && j >= initSquareY && j <= (initSquareH)){
                 mapArray[i][j] = edgeColor
@@ -2762,6 +2934,9 @@ spawnPlayer(){
 
     finishedImage.setMask(rtMask)
     gagFinishedImage.setMask(rtMask)
+
+    this.imgBright = finishedImage.postFX.addColorMatrix();
+    this.gagimgBright = gagFinishedImage.postFX.addColorMatrix();
 
 
     stopTimerText = currentScene.add.text(screenW/2,screenH/2,'',{fontSize: 48, color: "#ee1111"}).setOrigin(1,0.5);
@@ -2873,6 +3048,7 @@ spawnPlayer(){
 showTimer(){
 
                 //140 seconds?
+                timeOut = false;
                 roundTimer = currentScene.time.delayedCall(roundTimerMax*1000, () =>
                     {
                         console.log("GEIM OBER")
@@ -2880,20 +3056,26 @@ showTimer(){
     
     var radius = { tl: 5, tr: 5, bl: 5, br: 5 };
 
+    this.timerBarBack = currentScene.add.rectangle(55,screenH-55,70,15,0x000000);
 
-    this.timerBarBorder = currentScene.add.image(55,screenH-55,'timerBorder');
     timerBar = currentScene.add.rexRoundRectangleProgress({
         x: 55, y: screenH-55,
         width: 70, height: 15,
 //        radius: radius,
-        barColor: COLOR_MAIN,
-        trackColor: COLOR_DARK,
-        trackStrokeColor: COLOR_LIGHT,
+        barColor: 0x8b6a9c,//COLOR_MAIN,
+        trackColor: undefined,//COLOR_DARK,
+        trackStrokeColor: undefined,//COLOR_LIGHT,
         trackStrokeThickness: 0,
         value: roundTimer/roundTimerMax,
     });
 
-    cam.ignore([timerBar, this.timerBarBorder]);
+
+    //make mask here and replace progress bar with image?
+
+    this.timerBarBorder = currentScene.add.image(55,screenH-55,'timerBorder');
+    this.timerBarClock = currentScene.add.image(20,screenH-55-7,'timerClock');
+
+    cam.ignore([timerBar, this.timerBarBorder, this.timerBarBack, this.timerBarClock]);
 }
 
 updateTimer(){
@@ -3152,12 +3334,13 @@ update ()
     upPress = cursors.up.isDown;
     downPress = cursors.down.isDown;
     aPress = keyA.isDown;
-    bPress = keyB.isDown;
-    cPress = keyC.isDown;
-//    dPress = keyD.isDown;
-    qPress = keyQ.isDown;
-    wPress = keyW.isDown;
-    spacePress = keySpace.isDown;
+//    bPress = keyB.isDown;
+//    cPress = keyC.isDown;
+//    dPress = keyD.isDown; //kill this one
+//    this.ePress = this.keyE.isDown;
+//    qPress = keyQ.isDown;
+//    wPress = keyW.isDown;
+//    spacePress = keySpace.isDown;
 
 
     if(bullComb != null){
@@ -3246,7 +3429,14 @@ update ()
 //            sfxCheer.play();
 //            sfxLightning.play();
 
-            this.sfxApplause.play()
+            this.time.addEvent({
+                delay: 70,
+                callback: () => {
+                    this.sfxApplause.play()
+                    this.sfxCheer2.play();
+                }                
+            })
+//            this.sfxApplause.play()
 
 
 
@@ -3254,10 +3444,10 @@ update ()
             this.spawnPlayer();
             
 
-        }else if(boxTimer == 0 || boxTimer == 20 || (boxTimer > 40 && boxTimer%3 == 0)){
+        }else if(boxTimer == 0 || boxTimer == 20 || (boxTimer > 40 && boxTimer%1 == 0)){
 //            if(boxTimer%10 == 0){
 
-                    if(boxTimer > 80 && this.buttonPressingSprite == undefined){
+                    if(boxTimer > 40 && this.buttonPressingSprite == undefined){
                         this.buttonPressingSprite = this.add.sprite(3*screenW/4,3*screenH/4,'buttonPressing').play('buttonPressingAnim');
                     }
 
@@ -3310,7 +3500,14 @@ update ()
 //        console.log("player.x: " + player.x)
 //        console.log("player.y: " + player.y)
 
-        
+/*        if(this.scrollImage != undefined){
+            if(this.scrollImage.alpha == 1){
+                this.scrollImage.alpha = 0.5;
+            }else{
+                this.scrollImage.alpha = 1;
+            }
+        }
+*/
 
         oldPosX = player.x;
         oldPosY = player.y;
@@ -3328,8 +3525,11 @@ update ()
         }
 
 
-        if(player.x < imageWidth && player.x > 0 && player.y > 0 && player.y < imageHeight){
-
+//        if(player.x < imageWidth-borderWidth - (1+this.noScroll*(imageWidth-screenW)) && player.x > borderWidth
+//             && player.y > borderWidth && player.y < imageHeight-borderWidth - (1+this.noScroll*(imageHeight-screenH))){
+        if(player.x < imageWidth && player.x > 0
+            && player.y > 0 && player.y < imageHeight){
+   
             tileIndexC = mapArray[player.x][player.y];
             tileIndexL = mapArray[player.x-1][player.y];
             tileIndexR = mapArray[player.x+1][player.y];
@@ -3629,6 +3829,32 @@ update ()
     
     }
 
+    if(player != undefined && cam != undefined && timerBar != undefined && this.timerBarBorder != undefined && scoreText != undefined && scoreTextRight != undefined){
+//        console.log("Relative Player X: " + (player.x - cam.scrollX));
+//        console.log("Relative Player Y: " + (player.y - cam.scrollY));
+        
+        if(player.x - cam.scrollX < 100 && player.y - cam.scrollY > screenH - 80){
+            if(timerBar.alpha > 0.4){
+                timerBar.alpha -= 0.05;
+                this.timerBarBorder.alpha -= 0.05;
+                this.timerBarBack.alpha -= 0.05;
+                this.timerBarClock.alpha -= 0.05;
+                scoreText.alpha -= 0.05;
+                scoreTextRight.alpha -= 0.05;
+            }
+        }else{
+            if(timerBar.alpha < 1){
+                timerBar.alpha += 0.05;
+                this.timerBarBorder.alpha += 0.05;
+                this.timerBarBack.alpha += 0.05;
+                this.timerBarClock.alpha += 0.05;
+                scoreText.alpha += 0.05;
+                scoreTextRight.alpha += 0.05;
+    
+            }
+        }    
+    }
+
 
     this.updateItem();
 
@@ -3661,6 +3887,9 @@ update ()
         if(roundTimer.getRemaining() == 0 && !timeOut){
             timeOut = true;
             this.killPlayer(player.x,player.y)
+            if(tileIndexC == edgeColor){
+                initPixel = [Math.floor(player.x),Math.floor(player.y)]
+            }
 //            decreaseHealth(6);
             console.log("TIME OUT!")
         }
@@ -4140,50 +4369,66 @@ increaseHealth(num = 1){
             spawnItemRNG *= 0.5;
 
             currentScene.time.addEvent({
-                delay: 10,
-                repeat: 200,
-                callback: () => {
-                    this.spawnGagBlitter();
-                }
-            });
-            currentScene.time.addEvent({
-                delay: 3501,
-                callback: () => {
-                    gagBlitter.clear();
-                }
-            });
-            //delay revive
-            currentScene.time.addEvent({
-                delay: 4200,
-                callback: () => {
-                    isMoving = false;
+                delay: 500,
+                callbacK: () => {
+
+                    currentScene.time.addEvent({
+                        delay: 1700,
+                        callback: () => {
+                            this.sfxMusic.setDetune(0);
+                        }
+                    })
+
+
+                    currentScene.time.addEvent({
+                        delay: 10,
+                        repeat: 200,
+                        callback: () => {
+                            this.spawnGagBlitter();
+                        }
+                    });
+                    currentScene.time.addEvent({
+                        delay: 3501,
+                        callback: () => {
+                            gagBlitter.clear();
+                        }
+                    });
+                    //delay revive
+                    currentScene.time.addEvent({
+                        delay: 4200,
+                        callback: () => {
+                            isMoving = false;
+                        }
+                    })
+        
+                    //change image
+                    currentScene.time.addEvent({
+                        delay: 1500,
+                        callback: () => {
+                            //change image here
+                            imageBackground.setVisible(true);
+                            silhImageBackground.setVisible(false);
+                            imageSilh.setVisible(true);
+                            gagImageSilh.setVisible(false);
+                            finishedImage.setVisible(true);
+                            gagFinishedImage.setVisible(false);
+                            this.revealImage();
+                            this.calculateScore()
+                            this.transScoreChange();
+                            this.delayHealthCall();
+        
+        //                    healthChange = true;
+        
+                            healthImage.setFrame(0);
+        
+        //                    currentHealth = 7;
+        
+                        }
+                    })
+        
                 }
             })
 
-            //change image
-            currentScene.time.addEvent({
-                delay: 1500,
-                callback: () => {
-                    //change image here
-                    imageBackground.setVisible(true);
-                    silhImageBackground.setVisible(false);
-                    imageSilh.setVisible(true);
-                    gagImageSilh.setVisible(false);
-                    finishedImage.setVisible(true);
-                    gagFinishedImage.setVisible(false);
-                    this.revealImage();
-                    this.calculateScore()
-                    this.transScoreChange();
-                    this.delayHealthCall();
-
-//                    healthChange = true;
-
-                    healthImage.setFrame(0);
-
-//                    currentHealth = 7;
-
-                }
-            })
 
 
         
@@ -4329,8 +4574,14 @@ updateHealth(){
 
 winRound(){
 
+    this.plugins.get('rexsoundfadeplugin').fadeOut(this.sfxMusic, 200);
+
+    cam.setBounds(0,0,imageWidth,imageHeight);
+
     this.sfxWinTune.play();
     this.sfxApplauseLong.play();
+
+    timeElapsed += Math.floor(roundTimer.getElapsedSeconds());
 
 
 
@@ -4344,6 +4595,11 @@ enemyArray[i].destroy();
         enemyArray = [];
     }
 
+    if(this.bullCloudFront != undefined){
+        this.bullCloudFront.destroy();
+        this.bullCloudBack.destroy();
+    }
+
     if(itemArray.length > 0){
         for(i=0;i<itemArray.length;i++){
                 itemArray[i].setTintFill(0xffffff);
@@ -4355,6 +4611,8 @@ enemyArray[i].destroy();
 
     timerBar.setVisible(false);
     this.timerBarBorder.setVisible(false);
+    this.timerBarBack.setVisible(false);
+    this.timerBarClock.setVisible(false);
 
 
     confettiEmitter2.resume();
@@ -4426,36 +4684,24 @@ enemyArray[i].destroy();
             }
         },
         {
-            from: 10000,
+            from: 5000,
             run: () => {
                 this.scene.launch('TransitionScene');
-/*                var fxCamera = cam.postFX.addColorMatrix();
-                var fxCamera2 = UICam.postFX.addColorMatrix();
-                currentScene.tweens.addCounter({
-                    from: 1,
-                    to: 0,
-                    duration: 700,
-                    onUpdate: function (tween) {
-                        var tweenValue = tween.getValue();
-                        fxCamera.brightness(tweenValue);
-                        fxCamera.saturate(tweenValue, true);
-                        fxCamera2.brightness(tweenValue);
-                        fxCamera2.saturate(tweenValue, true);
-                    },
-                    onComplete: () => {
-                        currentRound++;
-                        if(currentRound == 2){
-                            console.log("RESTART!!!!")
-                            currentScene.scene.restart();
-                            currentScene.scene.pause();
-
-                        }
-                    }
-                });*/        
             }
         },
         {
-            from: 500,
+            from: 200,
+            run: () => {
+                this.time.addEvent({
+                    delay: 100,
+                    callback: () => {
+                        this.scene.launch('LoadingScene');
+                    }
+                })
+            }
+        },
+        {
+            from: 300,
             run: () => {
                 currentRound++;
                 if(currentRound <= 2){
@@ -4464,6 +4710,9 @@ enemyArray[i].destroy();
                 }else{
                     //this is where the code goes for the 3rd round
                     //should only be availabel if % cleared is > 90% for both rounds? or 100% for one of the rounds
+                    //for now, its just gonna be a win screen for testing purposes
+                    this.scene.launch('WinTestScene')
+                    this.scene.stop('MainRoundScene')
                 }
             }
         }
@@ -4584,6 +4833,8 @@ enemyArray[i].destroy();
       });
     
 
+      totalScore += percentageRevealed;
+
       var winScoreText = currentScene.add.bitmapText(screenW/2,screenH/2-10,'score','').setOrigin(0.5,0.5);
       winScoreText.text = `${Math.floor(percentageRevealed)}%`;
       winScoreText.fontSize = 0;
@@ -4698,7 +4949,8 @@ getTilesWithin(array,x,y,w,h){
 
 
 spawnItem(){
-    if (Math.floor(Math.random()*spawnItemRNG)==0){
+//    console.log("itemArray + 1: " + (itemArray.length + 1))
+    if (Math.floor(Math.random()*spawnItemRNG*((itemArray.length+1)*0.5))==0){
 
         var itemX = Math.floor(Math.random()*(imageWidth - 60)) + 30;
         var itemY = Math.floor(Math.random()*(imageHeight - 60)) + 30;
@@ -4713,24 +4965,32 @@ spawnItem(){
 
 
 
-        if(Phaser.Math.Between(0,foodRNG+powerRNG) < foodRNG){
+        if(Phaser.Math.Between(0,foodRNG+powerRNG) < powerRNG && !itemArray.some(item => item._isPowerup == true)){
             //add additional rng spawn for the special foods?
-            if(Phaser.Math.Between(0,100) < favFoodRNG){
+            //itemArray.some(item => item._type != "food")
+
+            var itemType = Phaser.Math.Between(0,4)
+            var itemIndex = itemType;
+            var item = currentScene.add.image(itemX,itemY,'powerups',itemIndex);
+            item._type = itemTypes[itemType];
+            item._isPowerup = true;
+
+        }else{
+
+            if(Phaser.Math.Between(0,favFoodRNG) <= 1){
                 var itemIndex = Phaser.Math.Between(0,0);
                 var item = currentScene.add.image(itemX,itemY,'favFood',itemIndex);
                 item._type = "food"
                 item._favFood = true;
             }else{
-                var itemIndex = Phaser.Math.Between(0,2);
+                var itemIndex = Phaser.Math.Between(0,3);
                 var item = currentScene.add.image(itemX,itemY,'food',itemIndex);
                 item._type = "food"    
                 item._favFood = false;
             }
-        }else{
-            var itemType = Phaser.Math.Between(0,4)
-            var itemIndex = itemType;
-            var item = currentScene.add.image(itemX,itemY,'powerups',itemIndex);
-            item._type = itemTypes[itemType];
+            item._isPowerup = false;
+
+
         }
             item._index = itemIndex; //in case each item does somethig different
             item._shineTimer = 290;
@@ -4930,12 +5190,18 @@ drawRT.beginDraw();
 
 
 killPlayer(enemyX,enemyY){
-    isKillPlayer = true;
-    enemyKillXY[0] = enemyX;
-    enemyKillXY[1] = enemyY;
-    cam.stopFollow();
-    cam.pan(enemyX,enemyY,750,'Power2')
-    this.makeReviveGems()
+    if(!isKillPlayer){
+        totalDeaths++;
+        isKillPlayer = true;
+        enemyKillXY[0] = enemyX;
+        enemyKillXY[1] = enemyY;
+        cam.stopFollow();
+        cam.pan(enemyX,enemyY,750,'Power2')
+        this.makeReviveGems()
+        this.sfxMusic.setVolume(0.3);
+//        this.sfxMusic.setDetune(-500);
+    }
+
 }
 
 updateKill(){
@@ -5058,9 +5324,14 @@ updateKill(){
                 if((currentHealth == 0 || roundTimer.getRemaining() == 0) && !gameOver){
                     gameOver = true;
 
+                    timeElapsed += Math.floor(roundTimer.getElapsedSeconds());
+
+                    this.plugins.get('rexsoundfadeplugin').fadeOut(this.sfxMusic, 1000);
+
                     currentScene.time.addEvent({
                         delay: 1000,
                         callback: () => {
+                            
 
                             borderImage.destroy();
                             borderImage = this.add.image(0,0,'border').setOrigin(0,0);
@@ -5074,6 +5345,15 @@ updateKill(){
                 }else if(currentHealth <= 2 && !gagMode){
                     gagMode = true;
                     gagRevive = true;
+                    
+
+                    currentScene.time.addEvent({
+                        delay: 1700,
+                        callback: () => {
+                            this.sfxMusic.setDetune(-500);
+                        }
+                    })
+
                     currentHealth = 2;
                     spawnItemRNG *= 2;
                     currentScene.time.addEvent({
@@ -5199,6 +5479,7 @@ updateKill(){
                     player.setOrigin(0.5,0.5);
                     player.angle = 0;
                     cam.startFollow(player,true,0.1,0.1);
+                    this.sfxMusic.setVolume(1)
                     for (i=0;i<numReviveGems;i++){
 //                        reviveGems[i].setVisible(false);
 //                        reviveGems[i].scale = 3.5;
@@ -5423,10 +5704,13 @@ updateEnemy(){
 
 
             //percentageRevealed is 0-100
-            enemy.scale = (1 - 0.5*(percentageRevealed/100))*enemy._size*enemy._agoraCheck
+            enemy.scale = (1 - 0.7*(percentageRevealed/100))*enemy._size*enemy._agoraCheck
             if(enemy.scale < 0.5){
                 enemy.scale = 0.5;
             }
+
+            this.bullCloudBack.scale = this.bullCloudFront.scale = enemy.scale;
+
 
             //should this be for all general cases?
             if (bossLeft.includes(drawColor))
@@ -5492,36 +5776,104 @@ updateEnemy(){
 
                 //***Attack patterns */
 
+//                this.debugSingTimer.text = this.singTimer;
+
                 //check singing rng (actually this hsould just be any attack)
-                if(enemy._singTimer > enemy._singCooldown){
-                    if(Math.floor(Math.random()*enemy._singRNG) == 0){
-                        enemy._state = "sing";
-                        enemy._singTimer = 0;
-//                        console.log("HELLO IM SINGING")
-                    }else if(Math.floor(Math.random()*enemy._singRNG) == 1){
+                if(this.singTimer > this._singCooldown){
+
+                    var checkDist = (Math.abs(player.x - enemy.x) > 2*screenW/3) || (Math.abs(player.y - enemy.y) > 2*screenH/3);
+
+
+                    var checkRNG = Math.floor(Math.random()*enemy._singRNG);
+
+                    if(checkRNG == 0){
+//                        console.log("START SING")
+                        this.singTimer = -1;
+
+                        if(checkDist){
+                            this.warningPopup();
+                        }
+
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+
+                        currentScene.time.addEvent({
+                            delay: this.attackDelay,
+                            callback: () => {
+//                                enemy._state = "sing";
+                                this.startSing = true;
+                            }
+                        })
+
+
+                    }else if(checkRNG == 1){
                         //thunderclouds
-                        this.spawnThunderclouds(enemy);
-                        enemy._singTimer = 0;
-                    }else if(Math.floor(Math.random()*enemy._singRNG) == 2){
+//                        console.log("START THUNDER")
+                        this.singTimer = -1;
+
+//                        if(checkDist){
+//                            this.warningPopup();
+//                        }
+
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+
+                        currentScene.time.addEvent({
+                            delay: this.attackDelay,
+                            callback: () => {
+                                this.spawnThunderclouds(enemy);
+                            }
+                        })
+
+
+                    }else if(checkRNG == 2){
                         //radial lightning
-                        this.spawnRadialLightning(enemy);
-                        enemy._singTimer = 0;
-                    }else if(Math.floor(Math.random()*enemy._singRNG) == 3){
-                        //radial lightning
-                        this.spawnSoundwave();
-                        enemy._singTimer = 0;
+//                        console.log("START LIGHTNING")
+                        this.singTimer = -1;
+
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+
+                        if(checkDist){
+                            this.warningPopup();
+                        }
+
+                        currentScene.time.addEvent({
+                            delay: this.attackDelay,
+                            callback: () => {
+                                this.spawnRadialLightning(enemy);
+                            }
+                        })
+
+
+                    }else if(checkRNG == 3){
+                        //soundwave
+//                        console.log("START SOUNDWAVE")
+                        this.singTimer = -1;
+
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+
+                        if(checkDist){
+                            this.warningPopup();
+                        }
+
+                        currentScene.time.addEvent({
+                            delay: this.attackDelay,
+                            callback: () => {
+                                this.spawnSoundwave();
+                            }
+                        })
+
+
                     }
 
 
-                }else{
-                    enemy._singTimer++;
+                }else if(this.singTimer >= 0){
+                    this.singTimer++;
                 }
 
 
                 //blob spawn mechanism
                 //maybe spawnrate changes with difficulty
                 if(totalBlobs < totalBlobsMax){
-                    if(enemy._blobSpawnTimer > enemy._blobSpawnTimerMax){
+                    if(enemy._blobSpawnTimer > enemy._blobSpawnTimerMax && enemy._state != "sing"){
                         this.spawnBullBlobs();
 //                        console.log("spawning blob!")
                         enemy._blobSpawnTimer = 0;
@@ -5531,9 +5883,10 @@ updateEnemy(){
                 }
 
                 //for debugging the singing
-                if(bPress){
+                if(bPress || this.startSing){
                     enemy._state = "sing";
-                    console.log("debug sing press")
+                    this.startSing = false;
+//                    console.log("debug sing press")
                 }
 
                 //debug thunderclouds
@@ -5542,8 +5895,11 @@ updateEnemy(){
                  });
                  keyD.on('down', () => { 
                     if(!flipFlop){
-//                        this.spawnThunderclouds(enemy);
-                        this.spawnSoundwave();
+                        if((Math.abs(player.x - enemy.x) > 2*screenW/3) || (Math.abs(player.y - enemy.y) > 2*screenH/3)){
+                            this.warningPopup();
+                        }
+                        //                        this.spawnThunderclouds(enemy);
+                        this.spawnRadialLightning();
                         flipFlop = true
                     }
                  });
@@ -5591,6 +5947,7 @@ updateEnemy(){
             }
 
             if(enemy._state == "sing" && !isSinging){
+//                console.log("ASDOIJASOIDJOSJDS")
                 isSinging = true;
                 singCounter = 0;
                 bullSingTimeline.play(true)
@@ -5659,6 +6016,10 @@ updateEnemy(){
                 enemy._spriteOverlay.y = enemy.y;
             }
 
+            this.bullCloudBack.x = enemy.x;
+            this.bullCloudBack.y = enemy.y;
+            this.bullCloudFront.x = enemy.x;
+            this.bullCloudFront.y = enemy.y;
 
         }
 
@@ -5873,6 +6234,7 @@ updateEnemy(){
                     enemy.anims.play('bullBlobMove',true);
                 }
                 if(!isSinging){
+                    this.resetSing();
                     enemy._state = "move";
                 }
             }
@@ -5954,16 +6316,33 @@ updateEnemy(){
                 
                 enemy._currentVel = enemy._totalVel*(((enemy._totalTimer - enemy._currentTimer)/enemy._totalTimer)**4)
 
+
+                if(enemy._currentTimer < enemy._totalTimer){
+                    enemy.angle += 5*(1-((enemy._currentTimer/enemy._totalTimer))**2)
+                    enemy.scale = 0.5+0.5*((enemy._currentTimer/enemy._totalTimer)**1);
+                }
+
                 enemy._xVel = Math.cos((enemy.angle+90)*Math.PI/180)*enemy._currentVel;
                 enemy._yVel = Math.sin((enemy.angle+90)*Math.PI/180)*enemy._currentVel;
                 enemy.x += enemy._xVel;
                 enemy.y += enemy._yVel;
+
+            
 
                 enemy._currentTimer++;
                 
                 if(enemy._currentTimer > enemy._totalTimer*3){
                     enemyArray.splice(enemyArray.indexOf(enemy),1);
                     enemy.destroy();
+                }
+                
+                if(enemy._currentTimer == enemy._totalTimer){
+                    currentScene.time.addEvent({
+                        delay: 350,
+                        callback: () => {
+                            this.sfxLightningbolt2.play();
+                        }
+                    })
                 }
 
                 enemy._hitLine = new Phaser.Geom.Line(enemy.x, enemy.y, enemy.x - enemy._xVel+(45*Math.cos(enemy.angle+90)), enemy.y - enemy._yVel+(45*Math.sin(enemy.angle+90)));
@@ -6023,7 +6402,7 @@ updateEnemy(){
                 }
     
 
-                enemy._currentVel = enemy._totalVel/3;
+                enemy._currentVel = enemy._totalVel/5;
 
 
                 if(enemy._currentTimer > 60){
@@ -6039,6 +6418,10 @@ updateEnemy(){
 
                     enemy.angle += (angleB-enemy.angle)*0.03
 
+                }
+
+                if(enemy._currentTimer == 60){
+                    this.sfxSoundwave2.play();
                 }
 
 
@@ -6085,6 +6468,50 @@ updateEnemy(){
 
     }
     }
+}
+
+resetSing(){
+    this.singTimer = 0;
+    this._singCooldown = 200 + Math.floor(200*Math.random())
+}
+
+flashingEnemy(enemyCM = [this.bullCM,this.cloudFCM,this.cloudBCM]){
+
+    currentScene.tweens.addCounter({
+        from: 1,
+        to: 2,
+        ease: 'Circ.easeOut',
+        yoyo: true,
+        repeat: 3,
+        duration: 210,
+        onUpdate: (tween) => {
+            for(i=0;i<enemyCM.length;i++){
+                enemyCM[i].brightness(tween.getValue());
+            }
+        }
+    })
+
+
+}
+
+warningPopup(){
+    this.sfxWarning.play()
+                            
+    var warningImage = currentScene.add.image(screenW/2,screenH/2,'warning').setAlpha(0)
+    cam.ignore([warningImage]);
+
+
+    currentScene.tweens.add({
+        targets: warningImage,
+        alpha: 1,
+        ease: 'Circ.easeOut',
+        yoyo: true,
+        repeat: 3,
+        duration: 210,
+        onComplete: () => {
+            warningImage.destroy();
+        }
+    })
 }
 
 startKill(enemy, enemyArray){
@@ -6168,6 +6595,15 @@ updateAnimation(){
 
 spawnSoundwave(){
 
+    this.sfxSoundwave1.play()
+
+    currentScene.time.addEvent({
+        delay: 2000,
+        callback: () => {
+            this.resetSing();
+        }
+    })
+
     for(i=0;i<enemyArray.length;i++){
         if(enemyArray[i]._enemyType == "bull"){
             var bullBossEnemy = i;
@@ -6193,7 +6629,7 @@ spawnSoundwave(){
         }
     }
 
-    for(i = 0; i < 360; i+= 120){
+    for(i = 0; i < 360; i+= 360/5){
         var soundwave = currentScene.add.sprite(tempBull.x,tempBull.y,'soundwave');
         soundwave.angle = i - addAngle//+ ()*(1-enemyArray[bullBossEnemy].flipX);
         soundwave._initX = tempBull.x;
@@ -6211,7 +6647,7 @@ spawnSoundwave(){
         soundwave._noDie = true;
         soundwave._totalVel = 3;
         soundwave._currentVel = soundwave._totalVel;
-        soundwave._totalTimer = 40;
+        soundwave._totalTimer = 80;
         soundwave._currentTimer = 0;
         soundwave._xVel = Math.cos((soundwave.angle+90)*Math.PI/180)*soundwave._totalVel;
         soundwave._yVel = Math.sin((soundwave.angle+90)*Math.PI/180)*soundwave._totalVel;
@@ -6240,6 +6676,9 @@ spawnSoundwave(){
 
 spawnRadialLightning(){
 
+
+    this.sfxLightningbolt1.play();
+
     for(i=0;i<enemyArray.length;i++){
         if(enemyArray[i]._enemyType == "bull"){
             var bullBossEnemy = i;
@@ -6256,17 +6695,25 @@ spawnRadialLightning(){
         lightningBolt._enemyType = 'lightningBolt';
         lightningBolt._state = "move";
         lightningBolt._noDie = true;
-        lightningBolt._totalVel = 6;
+        lightningBolt._totalVel = 5;
         lightningBolt._currentVel = lightningBolt._totalVel;
-        lightningBolt._totalTimer = 30;
+        lightningBolt._totalTimer = 35;
         lightningBolt._currentTimer = 0;
         lightningBolt._xVel = Math.cos((lightningBolt.angle+90)*Math.PI/180)*lightningBolt._totalVel;
         lightningBolt._yVel = Math.sin((lightningBolt.angle+90)*Math.PI/180)*lightningBolt._totalVel;
+        lightningBolt.scale = 0.5;
 
         enemyArray.push(lightningBolt);
 
         UICam.ignore([lightningBolt]);
     }
+
+    currentScene.time.addEvent({
+        delay: 500,
+        callback: () => {
+            this.resetSing();
+        }
+    })
 
 /*        var lightningTween = currentScene.tweens.addCounter({
             from: 0,
@@ -6342,7 +6789,7 @@ spawnThunderclouds(enemy){
             },
             {
                 from: 0,
-                duration: 1100,
+                duration: 1300,
                 onStart: () => {
                 },
                 onUpdate: () => {
@@ -6420,7 +6867,10 @@ spawnThunderclouds(enemy){
                 from: 0,
                 duration: 800,
                 y: '-= 300',
-                ease: 'Cubic.easeIn'
+                ease: 'Cubic.easeIn',
+                onComplete: () => {
+                    this.resetSing();
+                }
             }
         ]
     })
@@ -6647,13 +7097,148 @@ this.checkAdjacentTrans();
     this.calculateScore();
 
     if(percentageDelta >= 0.1 || actualFillCounter > 5){
-        this.percPopup();
+        if(percentageDelta < 0.1){
+            this.transScoreChange();
+            sfxSuccess.play();
+            sfxExplosion.play();
+            cam.shake(100,0.02);
+            UICam.shake(100,0.02);
+        }else{
+            this.percPopup();
+
+            this.flashSilh();
+
+            if(this.finishedImageTween != undefined){
+                if(this.finishedImageTween.isPlaying()){
+                    this.finishedImageTween.stop()
+                }    
+            }
+
+            this.imgBright.brightness(1.25);
+            this.gagimgBright.brightness(1.25);        
+
+            this.finishedImageTween = currentScene.tweens.addCounter({
+                from: 1.25,
+                to: 1,
+                duration: 200,
+                delay: 50,
+                ease: "Quad.easeIn",
+                onUpdate: () => {
+                    var value = this.finishedImageTween.getValue()
+                    this.imgBright.brightness(value);
+                    this.gagimgBright.brightness(value);        
+                }
+            })
+        
+        }
     }else{
-        this.transScoreChange();
-        sfxSuccess.play();
+            this.transScoreChange();
+            sfxSuccess.play();    
     }
 
-    this.flashSilh();
+
+
+    if((this.ePress || percentageRevealed > 30) && !this.isScroll){
+
+        console.log("SCROOL!!!!")
+
+        //todo: add sound effect, add SCROLL popup text, maybe add some images
+
+        this.isScroll = true;
+
+        cam.setBounds(0,0,imageWidth,imageHeight);
+        cam.setLerp(0.01,0.01)
+
+//        this.bleh = 0;
+
+        if(imageWidth > screenW){
+            for (i=screenW-borderWidth;i<imageWidth-borderWidth+1;i++){
+                for (j=borderWidth;j<imageHeight-borderWidth+1;j++){
+                    if(mapArray[i][j] == borderColor){
+                        mapArray[i][j] = baseColor;
+//                        this.bleh++;
+                    }
+                }
+            }        
+
+        }else if(imageHeight > screenH){
+            for (i=borderWidth;i<imageWidth-borderWidth+1;i++){
+                for (j=screenH-borderWidth;j<imageHeight-borderWidth+1;j++){
+                    if(mapArray[i][j] == borderColor){
+                        mapArray[i][j] = baseColor;
+//                        this.bleh++;
+                    }
+                }
+            }        
+        }
+
+//        console.log("BLEHHHH: " + this.bleh)
+
+    this.scrollImage = currentScene.add.image(screenW/2,-50,'scroll')
+    cam.ignore([this.scrollImage])
+
+        var scrollTween = this.tweens.chain({
+            targets: this.scrollImage,
+            tweens:[
+                {
+                    at: 0,
+                    duration: 50,
+                    y:{
+                        from: -50,
+                        to: screenH+50
+                    }
+                },
+                {
+                    from: 0,
+                    duration: 100,
+                    y: {
+                        from: -50,
+                        to: screenH+50
+                    }
+                },
+                {
+                    from: 0,
+                    duration: 150,
+                    y: {
+                        from: -50,
+                        to: screenH+50
+                    }
+                },
+                {
+                    from: 0,
+                    duration: 200,
+                    y: {
+                        from: -50,
+                        to: screenH+50
+                    }
+                },
+                {
+                    from: 0,
+                    duration: 500,
+                    y: {
+                        from: -50,
+                        to: screenH/2
+                    },
+                    ease: "Circ.easeOut"
+                },
+                {
+                    from: 750,
+                    delay: 1200,
+                    duration: 700,
+                    y: -200,
+                    ease: "Back.easeIn",
+                    onComplete: () => {
+                        cam.setLerp(0.1,0.1);
+                        this.scrollImage.destroy();
+                    }
+                },
+            ]
+        });
+     
+        
+
+    }
+
 
     if(enemyArray.length > 0){
         for(i=0;i<enemyArray.length;i++){
@@ -6674,6 +7259,13 @@ this.checkAdjacentTrans();
                 itemArray[i].setAlpha(1);
                 itemArray[i]._itemDestroy.paused = false;
                 if(itemArray[i]._type == "food"){
+
+                    this.healthEmitter.x = player.x;
+                    this.healthEmitter.y = player.y;
+                    this.healthEmitter.start();
+
+                    this.sfxHeal.play();
+
                     if(itemArray[i]._favFood){
                         //image popup here
                         var popupFood = currentScene.add.image(itemArray[i].x+30,itemArray[i].y-30,'favBubble').setOrigin(0.5,0.5);
@@ -7159,6 +7751,7 @@ flavorText.setTintFill(scoreTint);
             confettiEmitter.explode()
             cam.shake(400);
             UICam.shake(400);
+            this.sfxApplause.play();
             }else if(percentageDelta >= 6){
                 sfxSuccess2.play();
             this.addRainbowstars2();
@@ -7569,6 +8162,7 @@ checkFill(xPos,yPos,checkedLeft = false,checkedRight = false,dir)
 revealImage(){
 
     
+    
     rt.clear();
 
     numRevealed = 0;
@@ -7813,11 +8407,21 @@ class GameOver extends Phaser.Scene{
 
         //images
         this.load.image('gameOverScreen','assets/image/placeholders/gameover.png');
+
+        //audio
+        this.load.audio('gameOverSFX','assets/audio/placeholder/gameover.ogg')
     }
 
 
     create (){
 //        this.scene.setVisible(false, 'MainRoundScene');
+
+        this.time.addEvent({
+            delay: 500,
+            callback: () => {
+                this.sfxGameOver = this.sound.add('gameOverSFX').play();
+            }
+        })
 
         keyA = this.input.keyboard.addKey(65);
 
@@ -7932,6 +8536,7 @@ class Transition extends Phaser.Scene{
     }
 
     create (){
+        
         var rect = this.add.rectangle(0, 0, screenW, screenH, 0x000000).setAlpha(0).setOrigin(0,0);
         this.add.tween({
             targets: rect,
@@ -7945,6 +8550,8 @@ class Transition extends Phaser.Scene{
 
         })
 
+        this.scene.bringToTop()
+
     }
 }
 
@@ -7952,13 +8559,14 @@ class CharSelect extends Phaser.Scene{
 
     constructor ()
     {
-        super({ key: 'CharSelectScene', active: true });
+        super({ key: 'CharSelectScene', active: false });
     }
 
     init(){
 
         this.selectIndex = 0;
         this.oldIndex = -1;
+        timeElapsed = 0;
     }
 
     preload(){
@@ -7974,7 +8582,11 @@ class CharSelect extends Phaser.Scene{
         this.load.image('tigerCG','assets/image/cgsprite/TigerCG1.png');
         this.load.image('blankCG','assets/image/cgsprite/blank.png');
 
+        this.load.image('star','assets/image/cgsprite/star.png');
+
         this.load.image('charSelect','assets/image/portraits/charSelect.png');
+
+        this.load.image('error','assets/image/portraits/error.png');
 
 
         this.load.bitmapFont('score', 'assets/fonts/Hardpixel_0.png', 'assets/fonts/Hardpixel.fnt');
@@ -7984,6 +8596,13 @@ class CharSelect extends Phaser.Scene{
 
         this.load.audio('menuSelect','assets/audio/placeholder/menu select.ogg')
         this.load.audio('charSelect','assets/audio/placeholder/charSelect.ogg')
+        this.load.audio('errorSFX','assets/audio/placeholder/error.ogg')
+
+        this.load.audio('musicCharSelect','assets/audio/placeholder/charSelectMusic.ogg');
+        this.load.audio('musicCharSelectIntro','assets/audio/placeholder/charSelectMusicIntro.ogg');
+
+
+        this.load.plugin('rexsoundfadeplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexsoundfadeplugin.min.js', true);
 
 
     }
@@ -7991,14 +8610,146 @@ class CharSelect extends Phaser.Scene{
     create (){
 
 
-        //audio
-
-        this.sfxSelect = this.sound.add('menuSelect');
-        this.sfxCharSelect = this.sound.add('charSelect');
 
         //everything else
 
+
+        bIsPressed = false;
+
         this.ts = this.add.tileSprite(0, 0, screenW, screenH, 'tigerTile').setOrigin(0);
+
+
+        this.time.addEvent({
+            delay: 500,
+            callback: () => {
+        //audio
+        //oh yea, were getting into nested delays
+                this.time.addEvent({
+                    delay: 200,
+                    callback: () => {
+                        this.sfxMusic = this.sound.add('musicCharSelect');
+                        this.sfxMusic.setLoop(true);
+                        this.sfxMusicIntro = this.sound.add('musicCharSelectIntro');
+                        this.sfxMusicIntro.play();
+                        this.sfxMusicIntro.on('complete',() => this.sfxMusic.play());
+                
+                    }
+                })
+
+
+        this.sfxSelect = this.sound.add('menuSelect');
+        this.sfxCharSelect = this.sound.add('charSelect');
+        this.sfxError = this.sound.add('errorSFX');
+        
+
+        this.starBack1 = this.add.image(45,95,'star').setAngle(-20).setScale(0);
+        this.starBack1._scale = 0.8
+        this.starBack2 = this.add.image(18,130,'star').setAngle(7).setScale(0);
+        this.starBack2._scale = 0.4
+        this.starBack3 = this.add.image(11,197,'star').setAngle(27).setScale(0);
+        this.starBack3._scale = 0.2
+        this.starBack4 = this.add.image(125,105,'star').setAngle(30).setScale(0);
+        this.starBack4._scale = 0.6
+        this.starBack5 = this.add.image(102,50,'star').setAngle(-8).setScale(0);
+        this.starBack5._scale = 0.4
+        this.starBack6 = this.add.image(60,39,'star').setAngle(8).setScale(0);
+        this.starBack6._scale = 0.25
+        this.starBack7 = this.add.image(160,180,'star').setAngle(22).setScale(0);
+        this.starBack7._scale = 0.5
+        this.starBack8 = this.add.image(5,75,'star').setAngle(-27).setScale(0);
+        this.starBack8._scale = 0.15
+        
+
+        //background stars
+        this.starBack9 = this.add.image(screenW-20,screenH-10,'star').setAngle(-27).setScale(1);
+        this.starBack10 = this.add.image(screenW-70,20,'star').setAngle(17).setScale(0.4);
+
+
+        this.starDuration = 1200;
+        this.starDelay = 50;
+        this.starDelay2 = 150;
+
+
+        this.starBackTween1 = this.tweens.add({
+            targets: this.starBack1,
+            duration: this.starDuration*this.starBack1._scale,
+            scale: this.starBack1._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack1._scale),
+            angle: "+=72"
+        })
+
+        this.starBackTween2 = this.tweens.add({
+            targets: this.starBack2,
+            duration: this.starDuration*this.starBack2._scale,
+            scale: this.starBack2._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack2._scale),
+            angle: "+=72"
+        })
+
+        this.starBackTween3 = this.tweens.add({
+            targets: this.starBack3,
+            duration: this.starDuration*this.starBack3._scale,
+            scale: this.starBack3._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack3._scale),
+            angle: "+=72"
+        })
+
+        this.starBackTween4 = this.tweens.add({
+            targets: this.starBack4,
+            duration: this.starDuration*this.starBack4._scale,
+            scale: this.starBack4._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack4._scale),
+            angle: "-=72"
+        })
+
+        this.starBackTween5 = this.tweens.add({
+            targets: this.starBack5,
+            duration: this.starDuration*this.starBack5._scale,
+            scale: this.starBack5._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack5._scale),
+            angle: "-=72"
+        })
+
+        this.starBackTween6 = this.tweens.add({
+            targets: this.starBack6,
+            duration: this.starDuration*this.starBack6._scale,
+            scale: this.starBack6._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack6._scale),
+            angle: "+=72"
+        })
+
+        this.starBackTween7 = this.tweens.add({
+            targets: this.starBack7,
+            duration: this.starDuration*this.starBack7._scale,
+            scale: this.starBack7._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack7._scale),
+            angle: "-=72"
+        })
+
+        this.starBackTween8 = this.tweens.add({
+            targets: this.starBack8,
+            duration: this.starDuration*this.starBack8._scale,
+            scale: this.starBack8._scale,
+            ease: 'Cubic.easeOut',
+            delay: this.starDelay2+this.starDelay*(1/this.starBack8._scale),
+            angle: "+=72"
+        })
+
+
+        
+        
+
+        this.starArray = [this.starBackTween1,this.starBackTween2,this.starBackTween3,this.starBackTween4,this.starBackTween5,this.starBackTween6,this.starBackTween7,this.starBackTween8]
+
+
+
         this.charArray = ['tiger','blank','blank','blank','blank','blank','blank','blank','blank']
 //        this.portraitArray = [...Array(3)].map(e => Array(3).fill(1))
 
@@ -8009,19 +8760,29 @@ class CharSelect extends Phaser.Scene{
         const container = this.add.container(69+screenW/2, -20+screenH/2);
 
         this.portraitArray = [];
+        this.realPortraitArray = [];
 
         for(var i=0;i<this.charArray.length;i++){
-            var spriteImage = this.add.image(-this.spacing+(i%this.width)*this.spacing,-this.spacing+(Math.floor(i/this.height))*this.spacing,this.charArray[i]);
+            var spriteImage = this.add.image(-this.spacing+(i%this.width)*this.spacing,-this.spacing+(Math.floor(i/this.height))*this.spacing-200,this.charArray[i]);
 
             var spriteImageColor = spriteImage.postFX.addColorMatrix();
             spriteImageColor.brightness(0.4)
 
             this.portraitArray.push(spriteImageColor)
+            this.realPortraitArray.push(spriteImage);
 
             container.add(spriteImage);
         }
 
         this.portraitArray[0].brightness(1);
+
+        this.tweens.add({
+            targets: this.realPortraitArray,
+            y: '+=200',
+            duration: 650,
+            ease: 'Back.easeOut',
+            delay: this.tweens.stagger(70),
+        })
 
 
         this.anims.create({
@@ -8111,19 +8872,7 @@ class CharSelect extends Phaser.Scene{
         .setOrigin(0,0.5)
 
         this.nameColor = this.name.postFX.addColorMatrix();
-//        this.nameColor.hue()
 
-
-        /*
-        this.nameTween = this.tweens.add({
-            targets: this.name,
-            duration: 450,
-            ease: 'Circ.easeOut',
-//            y: screenH-25,
-            x: 11,
-//            delay: 250
-        })
-*/
 
 
         this.add.image(20,5,'charSelect').setOrigin(0,0)
@@ -8141,262 +8890,416 @@ class CharSelect extends Phaser.Scene{
         this.isDownPress = false
 
         this.hasSelected = false;
+
+        this.errorRect = this.add.rectangle(0,0,screenW,screenH,0xff0000,0.2).setOrigin(0,0).setAlpha(0);
+        this.errorPopup = this.add.image(screenW/2,screenH/2,'error').setAlpha(0);
+
+
+        this.hasLetGo = false
+            }
+        })
     
+
+//        this.tweens.pauseAll();
     }
 
     update(){
 
 
-        this.oldIndex = this.selectIndex;
-
-        leftPress = cursors.left.isDown;
-        rightPress = cursors.right.isDown;
-        upPress = cursors.up.isDown;
-        downPress = cursors.down.isDown;
-
-        this.leftPressN = cursors.left.isUp;
-        this.rightPressN = cursors.right.isUp;
-        this.upPressN = cursors.up.isUp;
-        this.downPressN = cursors.down.isUp;
-
-        aPress = keyA.isDown;
-        bPress = keyB.isDown;
-    
-
-
         this.ts.tilePositionX += 1;
         this.ts.tilePositionY -= 0.5;
 
-        if(!this.hasSelected){
-            if(leftPress){
-                if(!this.isLeftPress){
-                    if(this.selectIndex%this.width > 0){
-                        this.selectIndex--;
-                    }
-                    this.isLeftPress = true
-                }
-            }
-            if(rightPress){
-                if(!this.isRightPress){
-                    if(this.selectIndex%this.width < this.width-1){
-                        this.selectIndex++;
-                    }
-                    this.isRightPress = true;
-                }
-            }
-            if(upPress){
-                if(!this.isUpPress){
-                    if(Math.floor(this.selectIndex/this.width) > 0){
-                        this.selectIndex-= this.width;
-                    }
-                    this.isUpPress = true;
-                }
-            }
-            if(downPress){
-                if(!this.isDownPress){
-                    if(Math.floor(this.selectIndex/this.width) < this.height-1){
-                        this.selectIndex+= this.width;
-                    }
-                    this.isDownPress = true;
-                }
-            }
+//        this.starBack1.angle+= 0.2
+        if(this.sprite != undefined){
+            this.oldIndex = this.selectIndex;
 
-            if(this.leftPressN){
-                this.isLeftPress = false;
-            }
-            if(this.rightPressN){
-                this.isRightPress = false;
-            }
-            if(this.upPressN){
-                this.isUpPress = false;
-            }
-            if(this.downPressN){
-                this.isDownPress = false;
-            }
-
-        this.selectIndex = Phaser.Math.Clamp(this.selectIndex, 0, this.charArray.length);
-
-
-        this.selectSprite.x = -this.spacing+(this.selectIndex%this.width)*this.spacing;
-        this.selectSprite.y = -this.spacing+(Math.floor(this.selectIndex/this.height))*this.spacing;
-
-        }
-
-
-        if(this.selectIndex != this.oldIndex){
-
-            this.nameColor.hue(this.selectIndex*(360/9));
-
-            this.sfxSelect.play();
-
-            this.star1.scale = this.star2.scale = 0;    
+            leftPress = cursors.left.isDown;
+            rightPress = cursors.right.isDown;
+            upPress = cursors.up.isDown;
+            downPress = cursors.down.isDown;
     
-            if(this.starTween.isPlaying()){
-                this.starTween.restart();
-            }else{
-                this.starTween = this.tweens.add({
-                    targets: [this.star1, this.star2],
-                    duration: 800,
-                    scale: 1,
-                    ease: 'Circ.easeOut'
-                })
-            }
+            this.leftPressN = cursors.left.isUp;
+            this.rightPressN = cursors.right.isUp;
+            this.upPressN = cursors.up.isUp;
+            this.downPressN = cursors.down.isUp;
     
-
-            this.text1.x = 100;
-            this.text2.x = 103;
-            this.text3.x = 106;
-            this.text4.x = 109;
-
-            this.text1.text = this.text2.text = this.text3.text = this.text4.text = ''
-
-
-            if(this.textTween.isPlaying()){
-                this.textTween.restart();
-            }else{
-                this.textTween = this.tweens.add({
-                    targets: [this.text1,this.text2,this.text3, this.text4],
-                    duration: 900,
-                    ease: 'Circ.easeOut',
-                    delay: 250,
-                    x: '+=50',
-                    onStart: () => {
-                        this.text1.x = 100;
-                        this.text2.x = 103;
-                        this.text3.x = 106;
-                        this.text4.x = 109;
-            
-                    }
-                })
-            }
-
-
-            this.portraitArray[this.oldIndex].brightness(0.4);
-            this.portraitArray[this.selectIndex].brightness(1);
-
-    
-            if(this.charArray[this.selectIndex] == 'blank'){
-                this.sprite.setTexture('blankCG')
-                this.ts.setTexture('unknownTile')
-
-                var text1Text = 'Age: Unknown'
-                var text2Text = 'Height: Unknown'
-                var text3Text = 'Weight: Unknown'
-                var text4Text = 'Likes: Uhhhhhhhhhhh hh h hh'
-
-                this.name.text = 'Unknown'
+            aPress = keyA.isDown;
+            bPress = keyB.isDown;
         
-            }else if(this.charArray[this.selectIndex] == 'tiger'){
-                this.sprite.setTexture('tigerCG')
-                this.ts.setTexture('tigerTile')
-
-                var text1Text = 'Age: 27'
-                var text2Text = 'Height: 1.73m'
-                var text3Text = 'Weight: 105kg'
-                var text4Text = 'Likes: uhhhhh'
-
-                this.name.text = 'Tiger Guy'
+            if(this.hasLetGo){
+                if(keyA.isUp){
+                    this.hasLetGo = false;
+                }
+            }
+    
+    
+            this.starBack9.angle += 0.75
+            this.starBack10.angle -= 0.33
+    
+            if(!this.hasSelected){
+                if(leftPress){
+                    if(!this.isLeftPress){
+                        if(this.selectIndex%this.width > 0){
+                            this.selectIndex--;
+                        }
+                        this.isLeftPress = true
+                    }
+                }
+                if(rightPress){
+                    if(!this.isRightPress){
+                        if(this.selectIndex%this.width < this.width-1){
+                            this.selectIndex++;
+                        }
+                        this.isRightPress = true;
+                    }
+                }
+                if(upPress){
+                    if(!this.isUpPress){
+                        if(Math.floor(this.selectIndex/this.width) > 0){
+                            this.selectIndex-= this.width;
+                        }
+                        this.isUpPress = true;
+                    }
+                }
+                if(downPress){
+                    if(!this.isDownPress){
+                        if(Math.floor(this.selectIndex/this.width) < this.height-1){
+                            this.selectIndex+= this.width;
+                        }
+                        this.isDownPress = true;
+                    }
+                }
+    
+                if(this.leftPressN){
+                    this.isLeftPress = false;
+                }
+                if(this.rightPressN){
+                    this.isRightPress = false;
+                }
+                if(this.upPressN){
+                    this.isUpPress = false;
+                }
+                if(this.downPressN){
+                    this.isDownPress = false;
+                }
+    
+            this.selectIndex = Phaser.Math.Clamp(this.selectIndex, 0, this.charArray.length);
+    
+    
+            this.selectSprite.x = -this.spacing+(this.selectIndex%this.width)*this.spacing;
+            this.selectSprite.y = -this.spacing+(Math.floor(this.selectIndex/this.height))*this.spacing;
+    
+            }
+    
+    
+            if(this.selectIndex != this.oldIndex){
+    
+                this.nameColor.hue(this.selectIndex*(360/9));
+    
+                this.sfxSelect.play();
+    
+                this.star1.scale = this.star2.scale = 0;    
+        
+                if(this.starTween.isPlaying()){
+                    this.starTween.restart();
+                }else{
+                    this.starTween = this.tweens.add({
+                        targets: [this.star1, this.star2],
+                        duration: 800,
+                        scale: 1,
+                        ease: 'Circ.easeOut'
+                    })
+                }
+    
+                this.starBack1.scale = this.starBack2.scale = this.starBack3.scale =
+                    this.starBack4.scale = this.starBack5.scale = this.starBack6.scale =
+                        this.starBack7.scale = this.starBack8.scale = 0;
+    
+                        this.starBack1.angle = -20;
+                        this.starBack2.angle = 7;
+                        this.starBack3.angle = 27;
+                        this.starBack4.angle = 30;
+                        this.starBack5.angle = -8;
+                        this.starBack6.angle = 8;
+                        this.starBack7.angle = 22;
+                        this.starBack8.angle = -27;
                 
-            }
-
-
-            this.typewriteBitmapText(this.text1,text1Text,200)
-            this.typewriteBitmapText(this.text2,text2Text,300)
-            this.typewriteBitmapText(this.text3,text3Text,400)
-            this.typewriteBitmapText(this.text4,text4Text,500)
-
-        
-            this.sprite.x = -100;
-
-            if(this.spriteTween.isPlaying()){
-                this.spriteTween.restart();
-            }else{
-                this.spriteTween = this.tweens.add({
-                    targets: this.sprite,
-                    duration: 450,
-                    ease: 'Circ.easeOut',
-                    x: 80,
-                });    
-            }
-
-            this.statBox.scaleX = 0;
-
-            if(this.boxTween.isPlaying()){
-                this.boxTween.restart();
-            }else{
-                this.boxTween = this.tweens.add({
-                    targets: this.statBox,
-                    duration: 900,
-                    scaleX: 1,
-                    delay: 250,
-                    ease: 'Circ.easeOut',
-                })
-            }
-
-
     
-    
-    
-        }
-
-        if(aPress && !this.hasSelected){
-
-            this.sfxCharSelect.play();
-
-            this.hasSelected = true;
-
-            this.selectSprite.anims.pause();
-
-            this.tweens.add({
-                targets: this.sprite,
-                y: '-=6',
-                ease: "Circ.easeOut",
-                duration: 250,
-            })
-
-//            this.cameras.main.flash(800)
-            var flashRect = this.add.rectangle(0,0,screenW,screenH,0xffffff,0.8).setOrigin(0,0);
-
-            this.tweens.add({
-                targets: flashRect,
-                duration: 800,
-                alpha: 0
-            })
-
-            this.time.addEvent({
-                callback: () => {
-                    if(this.selectSprite.isTinted){
-                        this.selectSprite.clearTint();
-                    }else{
-                        this.selectSprite.setTintFill(0xffffff);
+                for(var i=0;i<this.starArray.length;i++){
+                    if(this.starArray[i].isPlaying()){
+                        this.starArray[i].destroy();
                     }
-                },
-                repeat: Math.floor(2500/70),
-                delay: 70
-            })
-
-            this.time.addEvent({
-                delay: 2000,
-                callback: () => {
-
-                    this.scene.launch('TransitionScene');
-
-                    currentChar = this.charArray[this.selectIndex];
-                        
-                    this.time.addEvent({
-                        delay: 500,
-                        callback: () => {
-                            this.scene.launch('MainRoundScene');
-                            this.scene.stop('CharSelectScene')
+                }
+    
+                this.starBackTween1 = this.tweens.add({
+                    targets: this.starBack1,
+                    duration: this.starDuration*this.starBack1._scale,
+                    scale: this.starBack1._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack1._scale),
+                    angle: "+=72"
+                })
+        
+                this.starBackTween2 = this.tweens.add({
+                    targets: this.starBack2,
+                    duration: this.starDuration*this.starBack2._scale,
+                    scale: this.starBack2._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack2._scale),
+                    angle: "+=72"
+                })
+        
+                this.starBackTween3 = this.tweens.add({
+                    targets: this.starBack3,
+                    duration: this.starDuration*this.starBack3._scale,
+                    scale: this.starBack3._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack3._scale),
+                    angle: "+=72"
+                })
+        
+                this.starBackTween4 = this.tweens.add({
+                    targets: this.starBack4,
+                    duration: this.starDuration*this.starBack4._scale,
+                    scale: this.starBack4._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack4._scale),
+                    angle: "-=72"
+                })
+        
+                this.starBackTween5 = this.tweens.add({
+                    targets: this.starBack5,
+                    duration: this.starDuration*this.starBack5._scale,
+                    scale: this.starBack5._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack5._scale),
+                    angle: "-=72"
+                })
+        
+                this.starBackTween6 = this.tweens.add({
+                    targets: this.starBack6,
+                    duration: this.starDuration*this.starBack6._scale,
+                    scale: this.starBack6._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack6._scale),
+                    angle: "+=72"
+                })
+        
+                this.starBackTween7 = this.tweens.add({
+                    targets: this.starBack7,
+                    duration: this.starDuration*this.starBack7._scale,
+                    scale: this.starBack7._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack7._scale),
+                    angle: "-=72"
+                })
+        
+                this.starBackTween8 = this.tweens.add({
+                    targets: this.starBack8,
+                    duration: this.starDuration*this.starBack8._scale,
+                    scale: this.starBack8._scale,
+                    ease: 'Cubic.easeOut',
+                    delay: this.starDelay2+this.starDelay*(1/this.starBack8._scale),
+                    angle: "+=72"
+                })
+            
+                    this.starArray = [this.starBackTween1,this.starBackTween2,this.starBackTween3,this.starBackTween4,this.starBackTween5,this.starBackTween6,this.starBackTween7,this.starBackTween8]
+            
+        
+    
+                this.text1.x = 100;
+                this.text2.x = 103;
+                this.text3.x = 106;
+                this.text4.x = 109;
+    
+                this.text1.text = this.text2.text = this.text3.text = this.text4.text = ''
+    
+    
+                if(this.textTween.isPlaying()){
+                    this.textTween.restart();
+                }else{
+                    this.textTween = this.tweens.add({
+                        targets: [this.text1,this.text2,this.text3, this.text4],
+                        duration: 900,
+                        ease: 'Circ.easeOut',
+                        delay: 250,
+                        x: '+=50',
+                        onStart: () => {
+                            this.text1.x = 100;
+                            this.text2.x = 103;
+                            this.text3.x = 106;
+                            this.text4.x = 109;
+                
                         }
                     })
                 }
-            });
+    
+    
+                this.portraitArray[this.oldIndex].brightness(0.4);
+                this.portraitArray[this.selectIndex].brightness(1);
+    
+        
+                if(this.charArray[this.selectIndex] == 'blank'){
+                    this.sprite.setTexture('blankCG')
+                    this.ts.setTexture('unknownTile')
+    
+                    var text1Text = 'Age: Unknown'
+                    var text2Text = 'Height: Unknown'
+                    var text3Text = 'Weight: Unknown'
+                    var text4Text = 'Likes: Uhhhhhhhhhhh hh h hh'
+    
+                    this.name.text = 'Unknown'
+            
+                }else if(this.charArray[this.selectIndex] == 'tiger'){
+                    this.sprite.setTexture('tigerCG')
+                    this.ts.setTexture('tigerTile')
+    
+                    var text1Text = 'Age: 27'
+                    var text2Text = 'Height: 1.73m'
+                    var text3Text = 'Weight: 105kg'
+                    var text4Text = 'Likes: uhhhhh'
+    
+                    this.name.text = 'Tiger Guy'
+                    
+                }
+    
+    
+                this.typewriteBitmapText(this.text1,text1Text,200)
+                this.typewriteBitmapText(this.text2,text2Text,300)
+                this.typewriteBitmapText(this.text3,text3Text,400)
+                this.typewriteBitmapText(this.text4,text4Text,500)
+    
+            
+                this.sprite.x = -100;
+    
+                if(this.spriteTween.isPlaying()){
+                    this.spriteTween.restart();
+                }else{
+                    this.spriteTween = this.tweens.add({
+                        targets: this.sprite,
+                        duration: 450,
+                        ease: 'Circ.easeOut',
+                        x: 80,
+                    });    
+                }
+    
+                this.statBox.scaleX = 0;
+    
+                if(this.boxTween.isPlaying()){
+                    this.boxTween.restart();
+                }else{
+                    this.boxTween = this.tweens.add({
+                        targets: this.statBox,
+                        duration: 900,
+                        scaleX: 1,
+                        delay: 250,
+                        ease: 'Circ.easeOut',
+                    })
+                }
+    
+    
+        
+        
+        
+            }
+    
+            if(aPress && !this.hasSelected){
+    
+                if(this.charArray[this.selectIndex] != 'blank'){
 
+                    if(bPress){
+                        bIsPressed = true;
+                    }
 
+//                    console.log("Bpressed?: " + bIsPressed)
+    
+                    this.sfxCharSelect.play();
+    
+                    this.hasSelected = true;
+        
+                    this.selectSprite.anims.pause();
+        
+                    this.tweens.add({
+                        targets: this.sprite,
+                        y: '-=6',
+                        ease: "Circ.easeOut",
+                        duration: 250,
+                    })
+        
+        //            this.cameras.main.flash(800)
+                    var flashRect = this.add.rectangle(0,0,screenW,screenH,0xffffff,0.8).setOrigin(0,0);
+        
+                    this.tweens.add({
+                        targets: flashRect,
+                        duration: 800,
+                        alpha: 0
+                    })
+        
+                    this.time.addEvent({
+                        callback: () => {
+                            if(this.selectSprite.isTinted){
+                                this.selectSprite.clearTint();
+                            }else{
+                                this.selectSprite.setTintFill(0xffffff);
+                            }
+                        },
+                        repeat: Math.floor(2500/70),
+                        delay: 70
+                    })
+        
+                    this.time.addEvent({
+                        delay: 2000,
+                        callback: () => {
+        
+                            this.scene.launch('TransitionScene');
+
+                            this.plugins.get('rexsoundfadeplugin').fadeOut(this.sfxMusic, 500);
+
+        
+                            this.time.addEvent({
+                                delay: 100,
+                                callback: () => {
+                                    this.scene.launch('LoadingScene');
+                                }
+                            })
+        
+                            currentChar = this.charArray[this.selectIndex];
+                                
+                            this.time.addEvent({
+                                delay: 500,
+                                callback: () => {
+                                    this.scene.launch('MainRoundScene');
+                                    this.scene.stop('CharSelectScene')
+                                }
+                            })
+                        }
+                    });
+        
+                }else if(!this.hasLetGo){
+                    this.hasLetGo = true;
+                    //tint screen red too
+                    this.sfxError.play();
+    
+                    if(this.errorPopup.alpha > 0){
+                        this.errorTween.stop();
+                    }
+                    this.errorRect.setAlpha(1)
+                    this.errorPopup.setAlpha(1);
+                    this.errorTween = this.tweens.add({
+                        targets: [this.errorPopup,this.errorRect],
+                        alpha: 0,
+                        duration: 600,
+                        ease: "Circ.easeIn"
+                    })
+    
+                }
+    
+    
+            }
+    
         }
-
-    }
+    
+        }
 
     typewriteBitmapText(bitmapLabel,text,delay1)
     {
@@ -8442,6 +9345,232 @@ class CharSelect extends Phaser.Scene{
 }
 
 
+class Loading extends Phaser.Scene{
+
+    constructor ()
+    {
+        super({ key: 'LoadingScene', active: false });
+    }
+
+    preload () {
+        this.load.spritesheet('loading','assets/image/food/food.png',{frameWidth: 20, frameHeight: 20});
+    }
+
+    create (){
+
+console.log("LOADING SCREEN STARTED")
+        this.anims.create({
+            key: 'loadingAnim',
+            frames: this.anims.generateFrameNumbers('loading',{start:0, end:3}),
+            frameRate:18,
+            repeat: -1
+        })
+
+        this.add.sprite(screenW-40,screenH-30,'loading').play('loadingAnim');
+
+        this.scene.bringToTop()
+
+    
+    }
+}
+
+
+class WinTest extends Phaser.Scene{
+
+    constructor ()
+    {
+        super({ key: 'WinTestScene', active: false });
+    }
+
+    preload () {
+        this.load.image('bgTile','assets/image/bgTile2.png');
+        this.load.bitmapFont('description', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
+        if(totalScore/2 == 100){
+            this.load.image('badge','assets/image/badge.png');
+        }else{
+            this.load.image('badge','assets/image/badge2.png');
+        }
+
+        this.load.audio('musicCharSelect','assets/audio/placeholder/charSelectMusic.ogg');
+        this.load.audio('musicCharSelectIntro','assets/audio/placeholder/charSelectMusicIntro.ogg');
+
+
+    }
+
+    create (){
+        this.ts = this.add.tileSprite(0, 0, screenW, screenH, 'bgTile').setOrigin(0);
+
+        var tempScore = totalScore/2;
+        var text = 'YOU SHOULDNT BE SEEING THIS';
+
+        if(tempScore == 100){
+            text = 'Incredible! 100% is unbelievable!\nYou earned this badge!'
+        }else if(tempScore > 90){
+            text = 'Great job!\nBut think you can go for 100%?'
+        }else{
+            text = 'Not too bad,\nbut there\'s room for improvement...'
+        }
+
+        this.add.bitmapText(screenW/2,screenH/2-80,'description',text).setOrigin(0.5,0.5).setCenterAlign();
+
+        this.totalScoreText = this.add.bitmapText(screenW/2,screenH/2-50,'description','').setOrigin(0.5,0.5);
+        this.totalScoreText.text = `Total score: ${(tempScore).toFixed(1)}%`;
+
+        this.timeText = this.add.bitmapText(screenW/2,screenH/2-30,'description','').setOrigin(0.5,0.5);
+        this.timeText.text = `Total time elapsed: ${timeElapsed} seconds`;
+        
+        this.deathText = this.add.bitmapText(screenW/2,screenH/2-10,'description','').setOrigin(0.5,0.5);
+        this.deathText.text = `Total deaths: ${totalDeaths}`;
+
+        this.add.image(screenW/2-5,screenH/2+50,'badge');
+
+        this.time.addEvent({
+            delay: 700,
+            callback: () => {
+                this.scene.stop('LoadingScene')
+            }
+        })
+        
+
+        this.time.addEvent({
+            delay: 200,
+            callback: () => {
+                this.sfxMusic = this.sound.add('musicCharSelect');
+                this.sfxMusic.setLoop(true);
+                this.sfxMusicIntro = this.sound.add('musicCharSelectIntro');
+                this.sfxMusicIntro.play();
+                this.sfxMusicIntro.on('complete',() => this.sfxMusic.play());
+        
+            }
+        })
+
+
+    }
+
+    update (){
+        this.ts.tilePositionX -= 1;
+    }
+
+}
+
+
+
+class TitleScreen extends Phaser.Scene{
+
+    constructor ()
+    {
+        super({ key: 'TitleScreenScene', active: true });
+    }
+
+    preload () {
+
+        this.load.bitmapFont('description', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
+
+        this.load.image('bgTile','assets/image/bgTile2.png');
+
+        this.load.audio('music','assets/audio/placeholder/titleMusic.ogg');
+        this.load.audio('charSelect','assets/audio/placeholder/charSelect.ogg')
+
+        this.load.plugin('rexsoundfadeplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexsoundfadeplugin.min.js', true);
+
+    }
+
+    create (){
+
+
+        this.sfxSelect = this.sound.add('charSelect')
+
+        this.sfxMusic = this.sound.add('music');
+        this.sfxMusic.on('complete',() => 
+        {
+//            console.log("HIAHSIODASOI")
+            this.tweens.add({
+                targets: blackRect,
+                alpha: 1,
+                duration: 500,
+                yoyo: true,
+                onComplete: () => {
+                    this.sfxMusic.play();
+                }
+            })    
+        }
+        );
+
+        this.time.addEvent({
+            delay: 300,
+            callback: () => {
+                this.sfxMusic.play();
+            }
+        })
+
+
+
+        this.ts = this.add.tileSprite(0, 0, screenW, screenH, 'bgTile').setOrigin(0);
+
+        this.add.bitmapText(screenW/2,screenH/2-40,'description','GUYS PANIC!!!').setOrigin(0.5,0.5).setScale(2);
+        this.add.bitmapText(screenW/2,screenH/2-20,'description','(tentative title)').setOrigin(0.5,0.5).setScale(0.5);
+
+        this.add.bitmapText(screenW/2,screenH/2+10,'description','Alpha Build 0.047').setOrigin(0.5,0.5).setScale();
+
+        
+        this.pressA = this.add.bitmapText(screenW/2,screenH/2+60,'description','-- Press A to start --').setOrigin(0.5,0.5).setScale(1);
+
+        var blackRect = this.add.rectangle(0,0,screenW,screenH,0x000000).setOrigin(0,0)
+
+        this.tweens.add({
+            targets: blackRect,
+            alpha: 0,
+            duration: 500,
+            
+        })
+
+        this.blinkIter = 0;
+        this.blinkIterMax = 30
+
+        this.keyA = this.input.keyboard.addKey(65);
+
+        this.hasStarted = false;
+
+    }
+
+    update (){
+        this.ts.tilePositionX -= 1;
+
+        if(this.blinkIter > this.blinkIterMax){
+            this.pressA.visible = !this.pressA.visible;
+            this.blinkIter = 0;
+        }
+        this.blinkIter++;
+
+        if(this.keyA.isDown && !this.hasStarted){
+            this.sfxSelect.play();
+            this.hasStarted = true;
+            this.blinkIterMax = 1
+
+            this.time.addEvent({
+                delay: 2000,
+                callback: () => {
+                    this.plugins.get('rexsoundfadeplugin').fadeOut(this.sfxMusic, 1000);
+
+
+                    this.scene.launch('TransitionScene');
+                        
+                    this.time.addEvent({
+                        delay: 500,
+                        callback: () => {
+                            this.scene.launch('CharSelectScene');
+                            this.scene.stop('TitleScreenScene')
+                        }
+                    })
+
+                }
+            })
+        }
+
+    }
+
+}
+
 //game config
 
 var screenW = 320;
@@ -8466,9 +9595,18 @@ var config = {
         update: update,
     },*/
     scale:{
-        zoom: 2
+        zoom: 2/window.devicePixelRatio,
+//        mode: Phaser.Scale.NONE
     },
-    scene: [CharSelect, MainRound,GameOver,Transition]
+    disableContextMenu: true,
+//    pixelArt: true,
+    render:{
+        roundPixels: true,
+        pixelArt: true,
+        antialias: true,
+        antialiasGL: true,
+    },//ORDER MATTERS HERE, FIRST SCENE IS WHAT GETS PLAYED FIRST NO MATTER WHAT
+    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest]
 };
 
 
