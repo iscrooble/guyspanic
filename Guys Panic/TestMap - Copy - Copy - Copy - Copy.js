@@ -10253,8 +10253,8 @@ var config = {
         antialias: true,
         antialiasGL: true,
     },//ORDER MATTERS HERE, FIRST SCENE IS WHAT GETS PLAYED FIRST NO MATTER WHAT
-//    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
-    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
+    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
+//    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
 };
 
 
