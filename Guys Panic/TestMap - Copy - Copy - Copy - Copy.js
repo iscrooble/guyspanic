@@ -523,7 +523,7 @@ totalBlobsMax = 8;
 boxRoulette = true;
 startingRound = true;
 boxTimer = 0;
-roundTimerMax = 160; //ITS THIS ONE
+roundTimerMax = 32; //ITS THIS ONE
 startBaseColor = [];
 gagMode = false;
 currentHealth = totalHealth;
@@ -1926,8 +1926,10 @@ this.time.addEvent({
 this.time.addEvent({
     delay: 500,
     callback: () => {
+        this.musicVolume = 1;
         this.sfxMusic = this.sound.add('musicRound');
         this.sfxMusic.setLoop(true);
+        this.sfxMusic.setVolume(this.musicVolume)
         this.sfxMusicIntro = this.sound.add('musicRoundIntro');
         this.sfxMusicIntro.play();
         this.sfxMusicIntro.on('complete',() => this.sfxMusic.play());
@@ -3098,9 +3100,9 @@ updateTimer(){
         this.sfxHurryUp.play();
 
         //code here for muting music, then speeding it up
-        //this.sfxMusic.pause();
-        //this.sfxMusic.setRate(1.5);
-        //this.hurryUp.on('complete',() => this.sfxMusic.resume());
+        this.sfxMusic.pause();
+        this.sfxMusic.setRate(1.25);
+        this.sfxHurryUp.on('complete',() => this.sfxMusic.resume());
 
         //code here for popup
 
@@ -4608,18 +4610,19 @@ winRound(){
     timeElapsed += Math.floor(roundTimer.getElapsedSeconds());
 
 
-    if(this.warningTween.isPlaying()){
-        this.warningTween.stop();
-        this.warningImage.destroy();
+    if(this.warningTween != undefined){
+        if(this.warningTween.isPlaying()){
+            this.warningTween.stop();
+            this.warningImage.destroy();
+        }    
     }
 
 
     roundWon = true;
     if(enemyArray.length > 0){
         for(i=0;i<enemyArray.length;i++){
-//            enemyArray[i]._state = "die";
-this.addSparkles(enemyArray[i].x,enemyArray[i].y)
-enemyArray[i].destroy();
+            this.addSparkles(enemyArray[i].x,enemyArray[i].y)
+            enemyArray[i].destroy();
         }
         enemyArray = [];
     }
@@ -5508,7 +5511,7 @@ updateKill(){
                     player.setOrigin(0.5,0.5);
                     player.angle = 0;
                     cam.startFollow(player,true,0.1,0.1);
-                    this.sfxMusic.setVolume(1)
+                    this.sfxMusic.setVolume(this.musicVolume)
                     for (i=0;i<numReviveGems;i++){
 //                        reviveGems[i].setVisible(false);
 //                        reviveGems[i].scale = 3.5;
@@ -6291,6 +6294,13 @@ updateEnemy(){
             }
 
             if(enemy._state == "die"){
+
+                if(enemy._spriteOverlay != undefined){
+                    enemy._spriteOverlay.destroy();
+                }
+
+                //dont think i need that
+//                enemy.anims.resume();
 
                 enemy.anims.play('enemyDie1',true);
                 totalBlobs--;
@@ -7426,7 +7436,9 @@ spawnThunderclouds(enemy){
                                 if(enemyArray.length > 0){
                                     enemyArray.forEach((enemy) => 
                                         {
-                                            enemy._state = "move"
+                                            if(enemy._state != "die"){
+                                                enemy._state = "move"
+                                            }
                                             
                                             if(enemy._spriteOverlay != undefined){
                                                 enemy._spriteOverlay.destroy();
@@ -10242,7 +10254,7 @@ var config = {
         antialiasGL: true,
     },//ORDER MATTERS HERE, FIRST SCENE IS WHAT GETS PLAYED FIRST NO MATTER WHAT
 //    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
-    scene: [TitleScreen,MainRound,CharSelect,GameOver,Transition,Loading,WinTest]
+    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
 };
 
 
