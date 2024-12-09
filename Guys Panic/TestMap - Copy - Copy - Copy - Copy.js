@@ -126,7 +126,7 @@ var origLayer;
 var mapBlitter;
 
 var roundTimer;
-var roundTimerMax = 160; //THIS IS NOT THE ACTUAL INIT, CHECK BELOW W/ SAME NAME
+var roundTimerMax = 150; //THIS IS NOT THE ACTUAL INIT, CHECK BELOW W/ SAME NAME
 var timerBar;
 
 const COLOR_MAIN = 0x4e342e;
@@ -288,6 +288,15 @@ const tileTint = [
     orange,
     aqua,
     white
+]
+
+var rainbowColor = [
+    red,
+    orange,
+    yellow,
+    lime,
+    aqua,
+    fuchsia,
 ]
 
 //const tints = [red, orange, yellow, lime, green, teal, aqua, blue, fuchsia];
@@ -488,6 +497,13 @@ var totalDeaths = 0;
 
 var bIsPressed = false;
 
+var masterVolume = 0.5 //change this back to 1 if you need full volume
+var musicVolume = 1 //change this back to 1 if you need music on
+
+var rainbowColorOffset = 0;
+var rainbowColorIdx = 0;
+var rainbowWave = 0;
+
 
 
 
@@ -523,7 +539,7 @@ totalBlobsMax = 8;
 boxRoulette = true;
 startingRound = true;
 boxTimer = 0;
-roundTimerMax = 160; //ITS THIS ONE
+roundTimerMax = 150; //ITS THIS ONE
 startBaseColor = [];
 gagMode = false;
 currentHealth = totalHealth;
@@ -574,7 +590,7 @@ this.startSing = false;
 preload ()
 {
 
-    this.sound.setVolume(0.5)
+    this.sound.setVolume(masterVolume)
     currentScene = this;
 
     //plugins
@@ -672,6 +688,7 @@ preload ()
     this.load.audio('roulette','assets/audio/placeholder/roulette.ogg')
     this.load.audio('spawn','assets/audio/placeholder/spawn.ogg')
     this.load.audio('cheer','assets/audio/placeholder/cheer2.ogg')
+//    this.load.audio('woo','assets/audio/placeholder/woo.ogg')
 
     this.load.audio('scoreTicker','assets/audio/placeholder/scoreTicker.ogg')
 
@@ -711,8 +728,10 @@ preload ()
 
     this.load.audio('bubble','assets/audio/placeholder/bubble.ogg')
     this.load.audio('start','assets/audio/placeholder/start.ogg')
+    this.load.audio('ready','assets/audio/placeholder/ready.ogg')
 
     this.load.audio('warningSFX','assets/audio/placeholder/warning.ogg')
+    this.load.audio('bosspowerup','assets/audio/placeholder/bosspowerup.ogg')
 
 
 
@@ -730,6 +749,7 @@ preload ()
     this.load.image('timerClock','assets/image/HUD/clock.png');
     this.load.image('scroll','assets/image/HUD/scroll.png');
     this.load.image('warning','assets/image/HUD/warning.png');
+    this.load.spritesheet('runningMan','assets/image/HUD/runningMan.png',{frameWidth:100,frameHeight:100});
     
 
 
@@ -755,6 +775,7 @@ preload ()
     this.load.spritesheet('webBig','assets/image/particles/webBig.png',{frameWidth:111,frameHeight:111});
     this.load.spritesheet('heart','assets/image/particles/heart.png',{frameWidth:24,frameHeight:24});
     this.load.image('health','assets/image/particles/health.png');
+    this.load.image('pagua','assets/image/particles/pagua.png');
 
 
     //music
@@ -792,7 +813,10 @@ create ()
 {
 
 
-    this.attackDelay = (210*3*2);
+
+    this.rainbowColorDelay = 0;
+
+    this.attackDelay = 500+(210*3*2);
     this.isScroll = false;
     roundTimer = undefined;
     //generate pixel texture
@@ -846,6 +870,9 @@ create ()
     this.sfxSoundwave1 = this.sound.add('soundwave1');
     this.sfxSoundwave2 = this.sound.add('soundwave2');
     this.sfxHurryUp = this.sound.add('hurryup');
+    this.sfxBossPowerUp = this.sound.add('bosspowerup');
+    this.sfxReady = this.sound.add('ready');
+//    this.sfxWoo = this.sound.add('woo');
 
     //plugin fx
     postFxPlugin = this.plugins.get('rexshockwavepipelineplugin');
@@ -903,6 +930,24 @@ create ()
     imageBackground = this.add.tileSprite(0, 0, imageWidth, imageHeight, 'backgroundImageBackground').setOrigin(0).setScrollFactor(0.3);
     silhImageBackground = this.add.image(0,0,'gagImageBackground').setOrigin(0,0).setVisible(false)//.setScrollFactor(0.5);
 //    silhImageBackground = this.add.tileSprite(0, 0, imageWidth, imageHeight, 'gagImageBackground').setOrigin(0).setScrollFactor(0.3).setVisible(false);
+
+    this.imageBackgroundCM = imageBackground.postFX.addColorMatrix();
+    this.silhImageBackgroundCM = silhImageBackground.postFX.addColorMatrix();
+
+    this.tweens.addCounter({
+        from: 1,
+        to: 1.2,
+        duration: 2500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+        onUpdate: (tween) =>{
+            var tValue = tween.getValue();
+            this.imageBackgroundCM.brightness(tValue);
+            this.silhImageBackgroundCM.brightness(tValue);
+        }
+    })
+    
 
     imageBackground.depth = -1;
     silhImageBackground.depth = -1;
@@ -976,6 +1021,8 @@ create ()
     });
 
 
+    //HUD anims
+
     this.anims.create({
         key: 'buttonPressingAnim',
         frames: this.anims.generateFrameNumbers('buttonPressing',{start:0, end:1}),
@@ -983,6 +1030,15 @@ create ()
         repeat: -1
     })
 
+    this.anims.create({
+        key: 'runningManAnim',
+        frames: this.anims.generateFrameNumbers('runningMan',{start:0, end:1}),
+        frameRate:6,
+        repeat: -1
+    })
+
+
+    //player anims
 
     this.anims.create({
         key: 'idle',
@@ -1926,12 +1982,12 @@ this.time.addEvent({
 this.time.addEvent({
     delay: 500,
     callback: () => {
-        this.musicVolume = 1;
         this.sfxMusic = this.sound.add('musicRound');
         this.sfxMusic.setLoop(true);
-        this.sfxMusic.setVolume(this.musicVolume)
+        this.sfxMusic.setVolume(musicVolume)
         this.sfxMusicIntro = this.sound.add('musicRoundIntro');
         this.sfxMusicIntro.play();
+        this.sfxMusicIntro.setVolume(musicVolume)
         this.sfxMusicIntro.on('complete',() => this.sfxMusic.play());
 
     }
@@ -2028,6 +2084,9 @@ startCG(startRound = true){
                     delay: 5000+300,
                     alpha: 1,     
                     ease: 'Back.easeOut',
+                    onStart: () => {
+//                        this.sfxReady.play();
+                    }
                 },
                 {
                     duration: 700,
@@ -2493,9 +2552,9 @@ spawnBullBoss(){
                 bullEnemy._dying = 0;
                 bullEnemy._isBoss = true;
                 bullEnemy._startSwing = false;
-                bullEnemy._xVel = (Math.floor(Math.random())*2-1)/4;
+                bullEnemy._xVel = (Math.floor(Math.random())*2-1)/4; //(-0.5,0.5)
                 bullEnemy._yVel = (Math.floor(Math.random())*2-1)/4;
-                bullEnemy._vel = 2;
+                bullEnemy._vel = 3;
                 bullEnemy._swingDir = -1;
                 this.singTimer = 0;
                 bullEnemy._blobSpawnTimer = 0;
@@ -3096,6 +3155,27 @@ updateTimer(){
     timerBar.value = 1-(roundTimer.getElapsedSeconds()/roundTimerMax);
 
     if(roundTimerMax-roundTimer.getElapsedSeconds() < 30 && !this.hurryUp){
+
+
+
+        currentScene.tweens.addCounter({
+            from: 0,
+            to: 1,
+            duration: 500,
+            yoyo: true,
+            repeat: 29,
+            onUpdate: function (tween)
+            {
+                const value = tween.getValue();
+
+                //yellow: 255,209,41
+                //red: 217,43,81
+                //diff: -7, -143, +34
+                timerBar.setBarColor(Phaser.Display.Color.GetColor(255 + Math.floor((217-255)*value), 209 + Math.floor((43-209)*value), 41 + Math.floor((81-41)*value)));
+            }
+        });
+
+
         this.hurryUp = true;
         this.sfxHurryUp.play();
 
@@ -3106,7 +3186,28 @@ updateTimer(){
 
         //code here for popup
 
+        var runningMan = currentScene.add.sprite(screenW+100,-20+screenH/2,'runningMan').play('runningManAnim').setOrigin(1,0.5);
+        this.hurryUpText = currentScene.add.dynamicBitmapText(screenW+100,-20+screenH/2,'score','HURRY UP!!').setScale(2).setOrigin(0,0.5);
+
+        cam.ignore([runningMan,this.hurryUpText])
+
+        this.hurryUpText.setDisplayCallback(this.jiggleCallback);
+
+        rainbowColorOffset=0;
+
+
+        currentScene.tweens.add({
+            targets: [runningMan,this.hurryUpText],
+            duration: 4000,
+            x: '-=800',
+            onComplete: () => {
+                runningMan.destroy();
+                this.hurryUpText.destroy();
+            }
+        })
+
         //code here for adding color tween on timer bar
+
     }
 
     if(roundTimerMax-roundTimer.getElapsedSeconds() < 11 && !this.hurryUp2){
@@ -3121,6 +3222,15 @@ updateTimer(){
 
 
 
+jiggleCallback(data)
+{
+    data.color = rainbowColor[(rainbowColorOffset + rainbowColorIdx) % rainbowColor.length];
+    rainbowColorIdx = (rainbowColorIdx + 1) % (rainbowColor.length);
+    data.y = Math.cos(rainbowWave + rainbowColorIdx) * 15;
+    rainbowWave += 0.02;
+
+    return data;
+}
 
 
 moveRight(){
@@ -3373,6 +3483,14 @@ update ()
 //    qPress = keyQ.isDown;
 //    wPress = keyW.isDown;
     spacePress = keySpace.isDown;
+
+    if(this.hurryUpText != undefined){
+        rainbowColorIdx = 0;
+        if(this.rainbowColorDelay++ >= 6){
+            rainbowColorOffset = (rainbowColorOffset + 1) % (rainbowColor.length);
+            this.rainbowColorDelay = 0;
+        }
+    }
 
 
 
@@ -4600,6 +4718,39 @@ updateHealth(){
 
 winRound(){
 
+    if(!this.isScroll){
+        if(imageWidth > screenW){
+            for(i=screenW-borderWidth;i<imageWidth-borderWidth+1;i++){
+                for(j = borderWidth;j<imageHeight-borderWidth+1;j++){
+                    if (silhouetteMatrix[j][i] == 1 && imageSilh.visible){
+                        numRevealed++;
+                    }else if (gagSilhouetteMatrix[j][i] == 1 && gagImageSilh.visible){
+                        numRevealed++;
+                    }
+                }
+            }
+        }else if(imageHeight > screenH){
+            for(i=borderWidth;i<imageWidth-borderWidth+1;i++){
+                for(j = screenH-borderWidth+1;j<imageHeight-borderWidth+1;j++){
+                    if (silhouetteMatrix[j][i] == 1 && imageSilh.visible){
+                        numRevealed++;
+                    }else if (gagSilhouetteMatrix[j][i] == 1 && gagImageSilh.visible){
+                        numRevealed++;
+                    }
+                }
+            }
+        }
+    
+    }
+
+
+    if(gagMode){
+        percentageRevealed = Math.floor(10*(100*numRevealed/(gagTotalSilhouette)))/10;
+    }else{
+        percentageRevealed = Math.floor(10*(100*numRevealed/(totalSilhouette)))/10;
+    }
+
+
     this.plugins.get('rexsoundfadeplugin').fadeOut(this.sfxMusic, 200);
 
     cam.setBounds(0,0,imageWidth,imageHeight);
@@ -4670,10 +4821,10 @@ winRound(){
 
     var biggerHoriz = false;
 
-    if(imageWidth > 320){
+    if(imageWidth > screenW){
         biggerHoriz = true;
         var initialScroll = cam.scrollX*10;
-    }else if(imageHeight > 240){
+    }else if(imageHeight > screenH){
         var initialScroll = cam.scrollY*10;
     }
 
@@ -5058,7 +5209,7 @@ updateItem(){
 
                 itemArray[i]._shineTimer++;
                 itemArray[i]._lifeSpan++;
-                if(itemArray[i]._lifeSpan >= 600){
+                if(itemArray[i]._lifeSpan >= 700){
                     itemArray[i].destroy();
                     itemArray.splice(i,1);
                 }else if(itemArray[i]._lifeSpan > 500){
@@ -5230,7 +5381,7 @@ killPlayer(enemyX,enemyY){
         cam.stopFollow();
         cam.pan(enemyX,enemyY,750,'Power2')
         this.makeReviveGems()
-        this.sfxMusic.setVolume(0.3);
+        this.sfxMusic.setVolume(0.3*musicVolume);
 //        this.sfxMusic.setDetune(-500);
     }
 
@@ -5338,6 +5489,7 @@ updateKill(){
             playerAfter2.setAlpha(0);
             playerAfter3.setAlpha(0);
             player.setVisible(false);
+//            this.sfxWoo.play();
             distCenter = screenW*4;
             playerState = "kill";
             isKillPlayer = false;
@@ -5511,7 +5663,7 @@ updateKill(){
                     player.setOrigin(0.5,0.5);
                     player.angle = 0;
                     cam.startFollow(player,true,0.1,0.1);
-                    this.sfxMusic.setVolume(this.musicVolume)
+                    this.sfxMusic.setVolume(musicVolume)
                     for (i=0;i<numReviveGems;i++){
 //                        reviveGems[i].setVisible(false);
 //                        reviveGems[i].scale = 3.5;
@@ -5737,8 +5889,8 @@ updateEnemy(){
 
             //percentageRevealed is 0-100
             enemy.scale = (1 - 0.7*(percentageRevealed/100))*enemy._size*enemy._agoraCheck
-            if(enemy.scale < 0.5){
-                enemy.scale = 0.5;
+            if(enemy.scale < 0.7){
+                enemy.scale = 0.7;
             }
 
             this.bullCloudBack.scale = this.bullCloudFront.scale = enemy.scale;
@@ -5826,7 +5978,7 @@ updateEnemy(){
                             this.warningPopup();
                         }
 
-                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM],enemy);
 
                         currentScene.time.addEvent({
                             delay: this.attackDelay,
@@ -5846,7 +5998,7 @@ updateEnemy(){
 //                            this.warningPopup();
 //                        }
 
-                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM],enemy);
 
                         currentScene.time.addEvent({
                             delay: this.attackDelay,
@@ -5861,7 +6013,7 @@ updateEnemy(){
 //                        console.log("START LIGHTNING")
                         this.singTimer = -1;
 
-                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM],enemy);
 
                         if(checkDist){
                             this.warningPopup();
@@ -5880,7 +6032,7 @@ updateEnemy(){
 //                        console.log("START SOUNDWAVE")
                         this.singTimer = -1;
 
-                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM]);
+                        this.flashingEnemy([this.bullCM,this.cloudFCM,this.cloudBCM],enemy);
 
                         if(checkDist){
                             this.warningPopup();
@@ -6530,7 +6682,10 @@ resetSing(){
     this._singCooldown = 200 + Math.floor(200*Math.random())
 }
 
-flashingEnemy(enemyCM = [this.bullCM,this.cloudFCM,this.cloudBCM]){
+flashingEnemy(enemyCM = [this.bullCM,this.cloudFCM,this.cloudBCM],thisEnemy){
+
+
+    this.sfxBossPowerUp.play();
 
     currentScene.tweens.addCounter({
         from: 1,
@@ -6542,6 +6697,40 @@ flashingEnemy(enemyCM = [this.bullCM,this.cloudFCM,this.cloudBCM]){
         onUpdate: (tween) => {
             for(i=0;i<enemyCM.length;i++){
                 enemyCM[i].brightness(tween.getValue());
+            }
+        }
+    })
+
+    var startingDur = 900;
+
+    var numSteps = Math.floor(1100/50);
+
+    currentScene.time.addEvent({
+        // 210*3*2 = 1260
+        delay: 50,
+        repeat: numSteps,
+        callback: () => {
+
+            if(!isMoving){
+                var x1 = thisEnemy.x;
+                var y1 = thisEnemy.y;
+            
+                var angle = Math.random()*360;
+                var xS = 60*Math.cos(angle*Math.PI/180);
+                var yS = 60*Math.sin(angle*Math.PI/180);
+                var ball = currentScene.add.image(x1+xS, y1+yS, 'pagua').setScale(0.75);
+                currentScene.tweens.add({
+                    targets: ball,
+                    duration: startingDur,
+                    ease: "Quad.easeIn",
+                    x: x1,
+                    y: y1,
+                    scale: 0,
+                    onComplete: () => {
+                        ball.destroy();
+                    }
+                })
+                startingDur -= Math.floor(700/numSteps);    
             }
         }
     })
@@ -6612,7 +6801,7 @@ warningPopup(){
                 {
                     delay: 210*3*2,
                     ease: 'Back.easeIn',
-                    scaleX: 3,
+                    scaleX: 5,
                     scaleY: 0.1,
                     alpha: 0,
                     duration: 150,
@@ -7169,7 +7358,7 @@ spawnThunderclouds(enemy){
     
     
     
-        if((this.ePress || percentageRevealed > 30) && !this.isScroll){
+        if((this.ePress || percentageRevealed > 30) && !this.isScroll && !bossKillStarted){
     
             console.log("SCROOL!!!!")
     
@@ -8380,14 +8569,16 @@ flavorText.setTintFill(scoreTint);
         UICam.shake(100);
     if(percentageDelta >= 8){
         sfxSuccess2.play();
+        this.sfxStart.play();
         this.addRainbowstars2();
             confettiEmitter.explode()
             cam.shake(400);
             UICam.shake(400);
             this.sfxApplause.play();
             }else if(percentageDelta >= 6){
-                sfxSuccess2.play();
-            this.addRainbowstars2();
+//                sfxSuccess2.play();
+                this.sfxStart.play();
+                this.addRainbowstars2();
             confettiEmitter.explode(200)
             cam.shake(200);
             UICam.shake(200);
@@ -8550,12 +8741,32 @@ const bulgeTextRight = currentScene.tweens.add({
         }
 })
 
+
+flavorText.scaleX = percentageDelta >= 3 ? 16 : 6;
+flavorText.scaleY = 0.05;
+
+currentScene.tweens.add({
+    targets: flavorText,
+    duration: percentageDelta >= 3 ? 350 : 250,
+    scaleX: 1,
+    scaleY: 1,
+    ease: 'Back.easeOut',
+})
+
+currentScene.tweens.add({
+    targets: flavorText,
+    duration: 1000,
+    ease: 'Circ.easeOut',
+    x: player.x - oldPosX > 0 ? '-=30' : '+=30',
+    y: player.y < 80 ? '+= 60' : '-= 45',
+})
+
+
 const flavorTextMove = currentScene.tweens.chain({
     targets: flavorText,
     tweens:[
         {
             duration: 300,
-            y: player.y < 80 ? '+= 60' : '-= 45',
             ease: 'power4',        
             fontSize: percentageDelta >= 7.5 ? 32 : 24, //change depending on text above
             hold: 800,
@@ -8581,6 +8792,17 @@ const flavorTextMove = currentScene.tweens.chain({
             }
         }
     ]
+})
+
+addScore.scaleX = addScoreRight.scaleX = percentageDelta >= 3 ? 16 : 6;
+addScore.scaleY = addScoreRight.scaleY = 0.05;
+
+currentScene.tweens.add({
+    targets: [addScore,addScoreRight],
+    duration: percentageDelta >= 3 ? 350 : 250,
+    scaleX: 1,
+    scaleY: 1,
+    ease: 'Back.easeOut'
 })
 
 const chain = currentScene.tweens.chain({
@@ -9037,7 +9259,7 @@ class GameOver extends Phaser.Scene{
     preload ()
     {
 
-        this.sound.setVolume(0.5)
+        this.sound.setVolume(masterVolume)
         //plugins
         this.load.plugin('rexgridcutimageplugin', 'https://raw.githubusercontent.com/rexrainbow/phaser3-rex-notes/master/dist/rexgridcutimageplugin.min.js', true);
 
@@ -9173,7 +9395,7 @@ class Transition extends Phaser.Scene{
 
     create (){
         
-        this.sound.setVolume(0.5)
+        this.sound.setVolume(masterVolume)
 
         var rect = this.add.rectangle(0, 0, screenW, screenH, 0x000000).setAlpha(0).setOrigin(0,0);
         this.add.tween({
@@ -9209,7 +9431,7 @@ class CharSelect extends Phaser.Scene{
 
     preload(){
 
-        this.sound.setVolume(0.5)
+        this.sound.setVolume(masterVolume)
 
         this.load.image('tigerTile','assets/image/tilebackground/tigerTile.png');
         this.load.image('unknownTile','assets/image/tilebackground/unknownTile.png');
@@ -9999,7 +10221,7 @@ class Loading extends Phaser.Scene{
 
     create (){
 
-        this.sound.setVolume(0.5)
+        this.sound.setVolume(masterVolume)
 
 console.log("LOADING SCREEN STARTED")
         this.anims.create({
@@ -10027,7 +10249,7 @@ class WinTest extends Phaser.Scene{
 
     preload () {
 
-        this.sound.setVolume(0.5)
+        this.sound.setVolume(masterVolume)
 
         this.load.image('bgTile','assets/image/bgTile2.png');
         this.load.bitmapFont('description', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
@@ -10123,7 +10345,7 @@ class TitleScreen extends Phaser.Scene{
 
     create (){
 
-        this.sound.setVolume(0.5)
+        this.sound.setVolume(masterVolume)
 
         this.sfxSelect = this.sound.add('charSelect')
 
@@ -10157,7 +10379,7 @@ class TitleScreen extends Phaser.Scene{
         this.add.bitmapText(screenW/2,screenH/2-40,'description','GUYS PANIC!!!').setOrigin(0.5,0.5).setScale(2);
         this.add.bitmapText(screenW/2,screenH/2-20,'description','(tentative title)').setOrigin(0.5,0.5).setScale(0.5);
 
-        this.add.bitmapText(screenW/2,screenH/2+10,'description','Alpha Build 0.047').setOrigin(0.5,0.5).setScale();
+        this.add.bitmapText(screenW/2,screenH/2+10,'description','Alpha Build 0.048').setOrigin(0.5,0.5).setScale();
 
         
         this.pressA = this.add.bitmapText(screenW/2,screenH/2+60,'description','-- Press A to start --').setOrigin(0.5,0.5).setScale(1);

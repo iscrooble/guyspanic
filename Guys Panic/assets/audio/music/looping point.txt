@@ -1,0 +1,4 @@
+Looping point: 
+
+15.610 seconds 
+688423 samples 
