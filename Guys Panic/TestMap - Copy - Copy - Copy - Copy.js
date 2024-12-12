@@ -498,7 +498,7 @@ var totalDeaths = 0;
 var bIsPressed = false;
 
 var masterVolume = 0.5 //change this back to 1 if you need full volume
-var musicVolume = 0 //change this back to 1 if you need music on
+var musicVolume = 1 //change this back to 1 if you need music on
 
 var rainbowColorOffset = 0;
 var rainbowColorIdx = 0;
@@ -10804,8 +10804,8 @@ var config = {
         antialias: true,
         antialiasGL: true,
     },//ORDER MATTERS HERE, FIRST SCENE IS WHAT GETS PLAYED FIRST NO MATTER WHAT
-//    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
-    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
+    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
+//    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
 };
 
 
