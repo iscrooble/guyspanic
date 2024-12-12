@@ -498,7 +498,7 @@ var totalDeaths = 0;
 var bIsPressed = false;
 
 var masterVolume = 0.5 //change this back to 1 if you need full volume
-var musicVolume = 1 //change this back to 1 if you need music on
+var musicVolume = 0 //change this back to 1 if you need music on
 
 var rainbowColorOffset = 0;
 var rainbowColorIdx = 0;
@@ -539,7 +539,7 @@ totalBlobsMax = 8;
 boxRoulette = true;
 startingRound = true;
 boxTimer = 0;
-roundTimerMax = 150; //ITS THIS ONE
+roundTimerMax = 120; //ITS THIS ONE
 startBaseColor = [];
 gagMode = false;
 currentHealth = totalHealth;
@@ -642,7 +642,10 @@ preload ()
     this.textures.remove('backgroundImage');
     this.textures.remove('cgSprite');
     if(currentChar == "tiger"){
+
+        this.load.bitmapFont('title', 'assets/fonts/OutwardBound_0.png', 'assets/fonts/OutwardBound.fnt');
         tints = [red, orange, yellow, aqua]
+
         if(currentRound == 1){
 //            this.load.image('backgroundImageBackground','assets/image/imageReveal/Tiger/Tiger1Background.png')
             this.load.image('backgroundImageBackground','assets/image/tilebackground/tigerTile2.png');
@@ -733,11 +736,13 @@ preload ()
     this.load.audio('warningSFX','assets/audio/placeholder/warning.ogg')
     this.load.audio('bosspowerup','assets/audio/placeholder/bosspowerup.ogg')
 
+    this.load.audio('buzzer','assets/audio/placeholder/buzzer.ogg')
 
 
     //preloading fonts
     this.load.bitmapFont('score', 'assets/fonts/Hardpixel_0.png', 'assets/fonts/Hardpixel.fnt');
     this.load.bitmapFont('speech', 'assets/fonts/TomorrowNight_0.png', 'assets/fonts/TomorrowNight.fnt');
+    this.load.bitmapFont('time', 'assets/fonts/CyberTime_0.png', 'assets/fonts/CyberTime.fnt');
 
     //HUD
     this.load.image('border','assets/image/border/border1.png');
@@ -816,7 +821,7 @@ create ()
 
     this.rainbowColorDelay = 0;
 
-    this.attackDelay = 500+(210*3*2);
+    this.attackDelay = 1220+(210*3*2);
     this.isScroll = false;
     roundTimer = undefined;
     //generate pixel texture
@@ -873,6 +878,9 @@ create ()
     this.sfxBossPowerUp = this.sound.add('bosspowerup');
     this.sfxReady = this.sound.add('ready');
 //    this.sfxWoo = this.sound.add('woo');
+    this.sfxBuzzer = this.sound.add('buzzer');
+
+    this.sfxBuzzer.setVolume(0.3);
 
     //plugin fx
     postFxPlugin = this.plugins.get('rexshockwavepipelineplugin');
@@ -1580,8 +1588,9 @@ create ()
         gravityY: -100,
         frequency: 20,
         x: {min: -5,max: 5},
+        y: {min: -2, max: 6},
 //        y: 20,
-        scale: {min: 0.2, max: 0.5},
+        scale: {min: 0.5, max: 1},
         blendMode: 'ADD',
         speedX: {
             onEmit: (p) => 3*p.x
@@ -1593,6 +1602,12 @@ create ()
     });
 
     this.healthEmitter.depth = 3;
+
+    this.pixieEmitter = this.add.particles(0,0,'pagua',{
+        scale: 0,
+        duration: 800,
+        emitting: false,
+    })
 
 
     sparkleEmitter = this.add.particles(0,0,'sparkle',{
@@ -1939,7 +1954,7 @@ healthImage = currentScene.add.image(0,0,'healthHUD').setFrame(0).setVisible(fal
         calculateScore();
         percPopup();
     }
-    cam.ignore([scoreText, scoreTextRight, borderImage,healthContainer,healthImage,confettiEmitter])
+    cam.ignore([scoreText, scoreTextRight, borderImage,healthContainer,healthImage,confettiEmitter, this.pixieEmitter])
     //this camera should ignore everything but the UI (border, text popups, score)
     //wtf it works
     rouletteRect = currentScene.add.rectangle(0,0,0,0,0xffffff,0.5);
@@ -2005,7 +2020,7 @@ startCG(startRound = true){
     var cgRect2 = this.add.rectangle(0,screenH/2,screenW,screenH/2,0x000000).setOrigin(0,0);
     var cgSprite = this.add.image(-90,screenH,'cgSprite').setOrigin(0.5,1);
     var cgSpeechBubble = this.add.image(150,80,'cgSpeechBubble').setOrigin(0,0.5).setAlpha(0);
-    var cgName = this.add.text(screenW*0.59,screenH-30,'Tiger Guy',{fontSize: 16, color: '#ffffff'});
+    var cgName = this.add.bitmapText(screenW*0.59,screenH-30,'title','Adrian').setScale(0.6);
     cgName.alpha = 0;
     cgSpeechBubble.angle = -10;
 
@@ -2034,7 +2049,7 @@ startCG(startRound = true){
             tweens:[
                 {
                     duration: 150,
-                    delay: 700,
+                    delay: 1000,
                     ease: 'Back.easeOut',
     //                x: screenW*0.61,
                     y: screenH-50,
@@ -2046,7 +2061,7 @@ startCG(startRound = true){
                     }
                 },
                 {
-                    delay: 4100-1000,
+                    delay: 4100-1000-300,
                     duration: 300,
                     ease: 'Back.easeIn',
     //                x: screenW*1.2,
@@ -2148,7 +2163,7 @@ startCG(startRound = true){
 
     if(startRound){
         this.time.addEvent({
-            delay: 5000+800+300+300+130+1500-800+70-300-300,
+            delay: 5000+800+300+300+130+1500-800+70-300-300-100,
             callback: () => {
                 startingRound = false;
             }
@@ -2275,7 +2290,7 @@ startCG(startRound = true){
                 x: 110,
             },
             {
-                duration: 130,
+                duration: 150,
                 delay: 400,
                 ease: 'Circ.easeOut',
                 yoyo: true,
@@ -2292,9 +2307,9 @@ startCG(startRound = true){
                 }
             },
             {
-                duration: 80,
+                duration: 90,
 //                delay: 400,
-                ease: 'Circ.easeOut',
+                ease: 'Quad.easeOut',
                 yoyo: true,
 //                repeat: 1,
 //                repeatDelay: 50,
@@ -2309,7 +2324,7 @@ startCG(startRound = true){
                 }
             },
             {
-                duration: 3000-200-250+300-400,
+                duration: 3000-200-250+300-400+200-100,
                 x: 110,
             },
             {
@@ -2554,7 +2569,13 @@ spawnBullBoss(){
                 bullEnemy._startSwing = false;
                 bullEnemy._xVel = (Math.floor(Math.random())*2-1)/4; //(-0.5,0.5)
                 bullEnemy._yVel = (Math.floor(Math.random())*2-1)/4;
-                bullEnemy._vel = 3;
+
+                if(hardMode){
+                    bullEnemy._vel = 4;
+                }else{
+                    bullEnemy._vel = 3;
+                }
+
                 bullEnemy._swingDir = -1;
                 this.singTimer = 0;
                 bullEnemy._blobSpawnTimer = 0;
@@ -2564,6 +2585,24 @@ spawnBullBoss(){
                 bullEnemy.depth = 1;
                 bullEnemy._size = 1; //shrink down to 1/4
                 bullEnemy._agoraCheck = 1;
+
+                bullEnemy._moveTimer = 2000; //in ms
+//                bullEnemy._accel = 1;
+                this.bossAccel = 1
+
+                this.bullMoveTween = currentScene.tweens.addCounter({
+                    from: 0,
+                    to: 1,
+                    duration: 500,
+                    yoyo: true,
+                    hold: bullEnemy._moveTimer,
+                    onUpdate: (tween) => {
+                        if(bullEnemy != undefined){
+                            this.bossAccel = tween.getValue();
+                        }
+                    },
+                })
+
 
                 bullEnemyTint.x = cloudBackTint.x = cloudFrontTint.x = bullEnemy.x;
                 bullEnemyTint.y = cloudBackTint.y = cloudFrontTint.y = bullEnemy.y;
@@ -3005,10 +3044,15 @@ spawnPlayer(){
     this.gagimgBright = gagFinishedImage.postFX.addColorMatrix();
 
 
-    stopTimerText = currentScene.add.text(screenW/2,screenH/2,'',{fontSize: 48, color: "#ee1111"}).setOrigin(1,0.5);
-    stopTimerTextRight = currentScene.add.text(-5+screenW/2,-8+screenH/2,'',{fontSize: 24, color: "#ee1111"}).setOrigin(0,0.5);
+    stopTimerText = currentScene.add.bitmapText(-20+screenW/2,screenH/2,'time','').setOrigin(1,0.5);
+    stopTimerTextRight = currentScene.add.bitmapText(-20+-4+screenW/2,-6+screenH/2,'time','').setOrigin(0,0.5).setScale(0.5);
     stopTimerText.setVisible(false)
     stopTimerTextRight.setVisible(false)
+
+    this.lowTimerText = currentScene.add.bitmapText(-20+screenW/2,screenH/2,'time','').setOrigin(1,0.5);
+    this.lowTimerTextRight = currentScene.add.bitmapText(-20+-4+screenW/2,-6+screenH/2,'time','').setOrigin(0,0.5).setScale(0.5);
+    this.lowTimerText.setVisible(false)
+    this.lowTimerTextRight.setVisible(false)
 
     this.revealImage();
 
@@ -3024,7 +3068,7 @@ spawnPlayer(){
 
     
     UICam.ignore([player,layerRT,rt,drawRT,finishedImage, gagFinishedImage, playerAfter1, playerAfter2,playerAfter3, reviveGems]);
-    cam.ignore([stopTimerText,stopTimerTextRight])
+    cam.ignore([stopTimerText,stopTimerTextRight,this.lowTimerText,this.lowTimerTextRight])
 
 
     const reviveTween12 = currentScene.tweens.addCounter({
@@ -3216,6 +3260,62 @@ updateTimer(){
         //that popup timer like in freeze
         //maybe a ticking sound, or a beeping one
         //and maybe the screen tints in and out
+
+        var lowTimerX = this.lowTimerText.x;
+        var lowTimerY = this.lowTimerText.y;
+        var shakeTimer = 1;
+
+        var maxAlpha = 0.1;
+
+        var redRect = currentScene.add.rectangle(0,0,screenW,screenH,0xff0000).setOrigin(0,0).setAlpha(0);
+
+        cam.ignore(redRect);
+
+
+        this.lowTimerText.setVisible(true)
+        this.lowTimerTextRight.setVisible(true)
+
+        currentScene.time.addEvent({
+            delay: 1000,
+            repeat: 9,
+            callback: () => {
+                currentScene.tweens.add({
+                    targets: [this.lowTimerText, this.lowTimerTextRight],
+                    duration: 300,
+                    scale: '+0.125',
+                    onStart: () => {
+                        this.sfxBuzzer.volume += 0.05;
+                        this.sfxBuzzer.play();
+                    },
+                    onUpdate: () => {
+                        this.lowTimerText.x = this.lowTimerTextRight.x = Phaser.Math.Between(lowTimerX - 1*shakeTimer, lowTimerX + 1*shakeTimer);
+                        this.lowTimerText.y = this.lowTimerTextRight.y = Phaser.Math.Between(lowTimerY - 2*shakeTimer, lowTimerY + 2*shakeTimer)
+                        this.lowTimerTextRight.y -= 6;
+
+                    },
+                    onComplete: () => {
+                        this.lowTimerText.x = this.lowTimerTextRight.x = lowTimerX;
+                        this.lowTimerText.y = this.lowTimerTextRight.y = lowTimerY;
+                        this.lowTimerTextRight.y -= 6;
+                        shakeTimer += 0.3;
+                    }
+
+                })
+
+                currentScene.tweens.add({
+                    targets: redRect,
+                    duration: 400,
+                    alpha: maxAlpha,
+                    ease: 'Circ.easeOut',
+                    yoyo: true,
+                    onComplete: () => {
+                        maxAlpha += 0.03;
+                    }
+
+                })
+
+            }
+        })
 
     }
 }
@@ -4031,6 +4131,20 @@ update ()
         }    
     }
 
+
+    if(roundTimer != undefined){
+        if(roundTimer.getRemainingSeconds() < 11){
+            var timerText9 = (Math.floor((roundTimerMax*1000-roundTimer.getElapsed())/1000))
+            var timerText29 = (Math.floor(roundTimerMax*1000-roundTimer.getElapsed())-(timerText9*1000))
+            this.lowTimerText.setText(timerText9)
+            this.lowTimerTextRight.setText(`.${timerText29}`)
+            if(timerText29 < 100){
+                this.lowTimerTextRight.setText(`.0${timerText29}`)
+            }
+        }    
+    }
+
+
     if(roundTimer != undefined){
         this.updateTimer();
         if(roundTimer.getRemaining() == 0 && !timeOut){
@@ -4218,6 +4332,7 @@ glowShine2(xPos = player.x,yPos = player.y,delayT = 56){
         }
     });
 }
+
 
 
 
@@ -5383,6 +5498,71 @@ killPlayer(enemyX,enemyY){
         this.makeReviveGems()
         this.sfxMusic.setVolume(0.3*musicVolume);
 //        this.sfxMusic.setDetune(-500);
+
+
+    var rect1 = currentScene.add.rectangle(0,0,3,10,0xff0000).setOrigin(0.5,0)
+    rect1.x = enemyX;
+    rect1.y = enemyY + 100;
+    rect1.scaleY = 16;
+    var rect2 = currentScene.add.rectangle(0,0,3,10,0xff0000).setOrigin(0.5,1)
+    rect2.x = enemyX;
+    rect2.y = enemyY - 100;
+    rect2.scaleY = 16;
+
+    var rectA = currentScene.add.rectangle(0,0,10,3,0xff0000).setOrigin(0,0.5)
+    rectA.x = enemyX + 100;
+    rectA.y = enemyY;
+    rectA.scaleX = 16;
+    var rectB = currentScene.add.rectangle(0,0,10,3,0xff0000).setOrigin(1,0.5)
+    rectB.x = enemyX - 100;
+    rectB.y = enemyY;
+    rectB.scaleX = 16;
+
+    UICam.ignore([rect1,rect2,rectA,rectB])
+
+
+    currentScene.tweens.add({
+        targets: rect1,
+        y: enemyY + 10,
+        scaleY: 1,
+        ease: "Back.easeOut",
+        duration: 420,
+    })
+
+    currentScene.tweens.add({
+        targets: rect2,
+        y: enemyY - 10,
+        scaleY: 1,
+        ease: "Back.easeOut",
+        duration: 420,
+    })
+
+    currentScene.tweens.add({
+        targets: rectA,
+        x: enemyX + 10,
+        scaleX: 1,
+        ease: "Back.easeOut",
+        duration: 420,
+    })
+
+    currentScene.tweens.add({
+        targets: rectB,
+        x: enemyX - 10,
+        scaleX: 1,
+        ease: "Back.easeOut",
+        duration: 420,
+    })
+
+    currentScene.time.addEvent({
+        delay: 750,
+        callback: () => {
+            rect1.destroy();
+            rect2.destroy();
+            rectA.destroy();
+            rectB.destroy();
+        }
+    })
+
     }
 
 }
@@ -5923,6 +6103,46 @@ updateEnemy(){
             if(enemy._state == "move"){
 
 
+                if(this.bullMoveTween.isPlaying()){
+                }else{
+                    //lol
+
+//                    enemy._xVel = (Math.floor(Math.random())*2-1)/4;
+//                    enemy._yVel = (Math.floor(Math.random())*2-1)/4;
+
+                    if(Math.random() < 0.5){
+                        var moveAngle = Math.PI*360*Math.random()/180;
+                        enemy._xVel = Math.cos(moveAngle)/4;
+                        enemy._yVel = Math.sin(moveAngle)/4;    
+                    }else{
+                        var moveAngle = Math.atan2(player.y-enemy.y,player.x-enemy.x);
+                        enemy._xVel = Math.cos(moveAngle)/4;
+                        enemy._yVel = Math.sin(moveAngle)/4;    
+                    }
+
+                    enemy._vel = 3 + Math.round(Math.random());
+
+                    enemy._moveTimer = 1000 + 8000*Math.random();
+//                    console.log("hold time: " + enemy._moveTimer)
+
+                    this.bullMoveTween = currentScene.tweens.addCounter({
+                        from: 0,
+                        to: 1,
+                        duration: 500,
+                        delay: 500,
+                        yoyo: true,
+                        hold: enemy._moveTimer,
+                        onUpdate: (tween) => {
+                            if(enemy != undefined){
+                                this.bossAccel = tween.getValue();
+//                                console.log("DASIOJDJIOI")
+                            }
+                        },
+                    })
+                }
+
+
+
                 enemy.anims.play('bullMove',true);
 
 //                if(bossHitbox.includes(transColor)){
@@ -5954,8 +6174,8 @@ updateEnemy(){
                     enemy.flipX = false;
                 }
 
-                enemy.x += enemy._xVel*enemy._vel;
-                enemy.y += enemy._yVel*enemy._vel;
+                enemy.x += enemy._xVel*enemy._vel*this.bossAccel;
+                enemy.y += enemy._yVel*enemy._vel*this.bossAccel;
 
 
                 //***Attack patterns */
@@ -6703,11 +6923,11 @@ flashingEnemy(enemyCM = [this.bullCM,this.cloudFCM,this.cloudBCM],thisEnemy){
 
     var startingDur = 900;
 
-    var numSteps = Math.floor(1100/50);
+    var numSteps = Math.floor(1800/25);
 
     currentScene.time.addEvent({
         // 210*3*2 = 1260
-        delay: 50,
+        delay: 25,
         repeat: numSteps,
         callback: () => {
 
@@ -6718,10 +6938,23 @@ flashingEnemy(enemyCM = [this.bullCM,this.cloudFCM,this.cloudBCM],thisEnemy){
                 var angle = Math.random()*360;
                 var xS = 60*Math.cos(angle*Math.PI/180);
                 var yS = 60*Math.sin(angle*Math.PI/180);
-                var ball = currentScene.add.image(x1+xS, y1+yS, 'pagua').setScale(0.75);
+                var ball = currentScene.add.image(x1+xS, y1+yS, 'pagua');
+                ball._scale = 0.25 + 0.25*Phaser.Math.Between(0,2);
+                ball.setScale(0)
+
+                cam.ignore(ball);
+
+                currentScene.tweens.add({
+                    targets: ball,
+                    duration: startingDur/4,
+                    scale: ball._scale,
+                    ease: "Quad.easeOut"
+                })
+
                 currentScene.tweens.add({
                     targets: ball,
                     duration: startingDur,
+                    delay: startingDur/4,
                     ease: "Quad.easeIn",
                     x: x1,
                     y: y1,
@@ -6747,13 +6980,13 @@ warningPopup(){
 
 
     currentScene.time.addEvent({
-        delay: 15,
-        repeat: Math.floor(2*(210*3*2+200+150)/15),
+        delay: 30,
+        repeat: Math.floor(2*(210*3*2+200+150)/30),
         callback: () => {
             if(this.warningImage!= undefined){
                 if(this.warningImage.isTinted){
                     this.warningImage.clearTint();
-                    console.log("HII")
+//                    console.log("HII")
                 }else{
                     this.warningImage.setTintFill(0xfff387);
                 }
@@ -7481,10 +7714,35 @@ spawnThunderclouds(enemy){
                     if(itemArray[i]._type == "food"){
     
                         this.healthEmitter.x = player.x;
-                        this.healthEmitter.y = player.y;
+                        this.healthEmitter.y = player.y+10;
                         this.healthEmitter.start();
     
+                        var itemX = itemArray[i].x;
+                        var itemY = itemArray[i].y;
+
                         this.sfxHeal.play();
+
+                        //change this to an image instead
+                        this.healText = currentScene.add.bitmapText(itemArray[i].x,itemArray[i].y,'score','+HEAL').setOrigin(0.5,0.5);
+                        this.healText.color = 0x00ff00;
+                        this.healText.setScale(0)
+
+                        currentScene.tweens.add({
+                            targets: this.healText,
+                            yoyo: true,
+                            scale: 0.5,
+                            ease: "Circ.easeOut",
+                            hold: 400,
+                            duration: 400
+                        })
+                        currentScene.tweens.add({
+                            targets: this.healText,
+                            y: '-=15',
+                            duration: 1301,
+                            onComplete: () => {
+                                this.healText.destroy();
+                            }
+                        })
     
                         if(itemArray[i]._favFood){
                             //image popup here
@@ -7493,6 +7751,7 @@ spawnThunderclouds(enemy){
                             popupFood.setDepth(3)
                             heartEmitter.emitParticleAt(popupFood.x,popupFood.y)
                             sfxFavFood.play();
+
     
                             UICam.ignore([popupFood])
     
@@ -7537,11 +7796,78 @@ spawnThunderclouds(enemy){
                             ]).play(true);
                             this.increaseHealth(6);
                         }else{
-                            if(gagMode){
-                                this.increaseHealth(2);
+
+                            var pixie = currentScene.add.image(itemArray[i].x-cam.scrollX,itemArray[i].y-cam.scrollY,'pagua')
+
+                            cam.ignore(pixie);
+
+                            var pixieY = 0;
+
+                            if(player.y > screenH/2){
+                                pixieY = 30;
                             }else{
-                                this.increaseHealth();
-                            }    
+                                pixieY = screenH - 30;
+                            }
+
+                            currentScene.time.addEvent({
+                                delay: 100,
+                                repeat: 10,
+                                callback: () => {
+//                                    this.pixieEmitter.emitParticleAt(pixie.x,pixie.y);
+
+                                    var pixieTrail = currentScene.add.image(pixie.x,pixie.y,'pagua');
+                                    cam.ignore(pixieTrail)
+                                    currentScene.tweens.add({
+                                        targets: pixieTrail,
+                                        duration: 600,
+                                        scale: 0,
+                                        ease: "Circ.easeOut",
+                                        onComplete: () => {
+                                            pixieTrail.destroy();
+                                        }
+                                    })
+                                }
+                            })
+
+                            currentScene.tweens.add({
+                                targets: pixie,
+                                repeat: -1,
+                                yoyo: true,
+                                duration: 300,
+                                scale: 0.6,
+                                ease: "Sine.easeInOut"
+                            })
+
+                            currentScene.tweens.add({
+                                targets: pixie,
+                                duration: 1000,
+                                y: pixieY,
+                                ease: "Quad.easeOut"
+                            })
+
+                            currentScene.tweens.add({
+                                targets: pixie,
+                                duration: 1001,
+                                x: screenW/2,
+                                ease: "Quad.easeIn",
+                                onComplete: () => {
+                                    if(gagMode){
+                                        this.increaseHealth(2);
+                                    }else{
+                                        this.increaseHealth();
+                                    }    
+
+                                    pixie.destroy();
+                                }
+                            })
+
+                            currentScene.time.addEvent({
+                                delay: 1000*2,
+                                callback: () => {
+//                                    this.addSparkles(itemX,itemY)
+                                }
+                            })
+
                         }
                     }else if(itemArray[i]._type == "speed"){
                         player._speedUp = true;
@@ -7555,6 +7881,9 @@ spawnThunderclouds(enemy){
                             for(i=0;i<enemyArray.length;i++){
                                 if(!enemyArray[i]._isBoss){
                                     enemyArray[i]._state = "die";
+                                    if(enemyArray[i]._noDie){
+                                        enemyArray[i]._state = "laugh";
+                                    }
                                 }
                             }    
                         }
@@ -10475,8 +10804,8 @@ var config = {
         antialias: true,
         antialiasGL: true,
     },//ORDER MATTERS HERE, FIRST SCENE IS WHAT GETS PLAYED FIRST NO MATTER WHAT
-    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
-//    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
+//    scene: [TitleScreen,CharSelect, MainRound,GameOver,Transition,Loading,WinTest] //uncomment this one when deploying
+    scene: [MainRound,TitleScreen,CharSelect,GameOver,Transition,Loading,WinTest]
 };
 
 
